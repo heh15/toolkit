@@ -116,13 +116,16 @@ def flux_mask_get(data_region,rms,chans,chan_width):
     return flux, uncertainty
 
 # flux of the region given by aperture for radio image
-def flux_aperture_get(data_masked,aperture,rms,chans,chan_width):
+def flux_aperture_get(data_masked,aperture,rms,chans,chan_width, beamarea_pix):
     data_cut=data_masked.data
     mask=data_masked.mask
-    flux=aperture_photometry(data_cut,apertures=aperture,mask=mask)['aperture_sum'][0]
-    chans_data=chans.data
-    error=np.sqrt(chans)*rms*chan_width/sqrt(beam_area_pix)
+    if np.shape(chans) == ():
+        chans = np.full(data_cut.shape, chans) 
+    flux=aperture_photometry(data_cut,apertures=aperture,mask=mask)['aperture_sum'][0]/beamarea_pix
+    error=np.sqrt(chans)*rms*chan_width/np.sqrt(beamarea_pix)
     uncertainty=aperture_photometry(data_cut,apertures=aperture,mask=mask,error=error)['aperture_sum_err'][0]
+
+    return flux, uncertainty
 
 # mask 3d cube with a region file in specified channels (June 28th)
 def Regmask3d(data,region_pix,lowchan,highchan):
