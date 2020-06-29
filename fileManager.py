@@ -57,7 +57,7 @@ def write_targets(targets, folder='.', scriptName=''):
     Feb. 11th, 2020
     1) Name the script with current time. 
     '''
-    if scriptName = '':
+    if scriptName == '':
         now=datetime.datetime.today()
         scriptName=now.strftime("%Y%m%d-%H%M%S")
     # scriptName=os.path.basename(targets[0])
@@ -68,14 +68,13 @@ def write_targets(targets, folder='.', scriptName=''):
             output.write('scp -r heh15@laburnum:'+str(target)+' '+folder+' \n')
   
 ### copy the modification into similar files.
-def _extract_txt(content, linerange, section, private, mode):
+def _extract_txt(content, Rows, section):
     ''' only used inside the module
-    To do: 
-    1) Need to comment out lines the same way as the emacs way. 
-    '''
+    To do:
+    Insert lines. 
+    '''    
     content_pd=pd.DataFrame(content, columns=['content'])
     content_pd['row number']=content_pd.index
-    content_pd['private']=False    
     # start from the '# main program'. 
     startindexes=content_pd.loc[content_pd['content'].str.contains(section, regex=False)].reset_index(drop=True)
     if len(startindexes)!=0:
@@ -92,53 +91,15 @@ def _extract_txt(content, linerange, section, private, mode):
     if len(stopindexes)>1:
         stopline=stopindexes['row number'][stopindexes.index[1]]
         content_mod_pd=content_mod_pd.loc[content_mod_pd['row number']<stopline]
-    content_mod_pd=content_mod_pd.loc[content_mod_pd['row number']>=linerange[0]]
-    if linerange[1]!=-1:
-        content_mod_pd=content_mod_pd.loc[content_mod_pd['row number']<=linerange[1]]
-    # select private regions.     
-    private_start=content_pd.loc[content_pd['content'].str.contains('\#{10} private region', regex=True)].reset_index(drop=True)['row number']
-    private_stop=content_pd.loc[content_pd['content'].str.match(r'\#{20}(?!#).*')].reset_index(drop=True)['row number']
-    for i in range(len(private_start)):
-        content_pd['private'].iloc[(private_start[i]+1):private_stop[i]]=True
-    content_mod_pd['private'].loc[content_pd['private']==True]=True
-    if mode=='input':
-        if private==True:
-            condition1=content_mod_pd['private']==True
-            condition2=content_mod_pd['content'].str.match(r'^[\t ]*#')
-            condition= condition1 & condition2
-            content_mod_pd['content'].loc[condition]=content_mod_pd['content'].loc[condition].str.replace('# ','',1, regex=True)
-
-    # # remove space lines.
-    # blankline=content_mod_pd['content'].str.match(r'^(?:[\t ]*(?:\r?\n|\r))+ ')
-    # content_mod_pd=content_mod_pd.loc[~blankline]
-    # # remove the file start with #.
-    # commentline=content_mod_pd['content'].str.match(r'^[\t ]*#.*$')
-    # content_mod_pd=content_mod_pd.loc[~commentline]
-
-    # # remove the line containing filename
-    # fileline=content_mod_pd[0].str.match(r'^.*= *.*\+?[\'\"].*[\'\"]$')
-    # content_mod_pd=content_mod_pd.loc[~fileline]
-    # # remove the protected regions. 
-    # protected_start=content_pd.loc[content_pd[0].str.contains('main program', regex=False)].index[0]
-       # protected_stop=content
-
+    content_mod_pd=content_mod_pd.loc[content_mod_pd['row number']>=Rows[0]]
+    if Rows[1]!=-1:
+        content_mod_pd=content_mod_pd.loc[content_mod_pd['row number']<=Rows[1]]
     content_mod_pd=content_mod_pd.reset_index(drop=True)
 
     return content_pd, content_mod_pd
 
-def _group_private(content_mod_pd):
 
-    adj_check=(content_mod_pd['private'] != content_mod_pd['private'].shift()).cumsum()
-    private_condition=content_mod_pd['private']==True
-    private_groupfunc=content_mod_pd.loc[private_condition].groupby(adj_check, as_index=False, sort=False)
-    private_group=private_groupfunc.agg({'content': 'sum',
-                                          'row number': ['first','last']})
-
-    return private_group
-
-
-
-def copy_modification(origfile, targets_other, inputrange=[0, -1], outputrange=[0, -1], section='main program', append=False, private=True, **kwargs):
+def copy_modification(origfile, targets_other, inputRows=[0, -1], outputRows=[0, -1], section='main program', append=False, **kwargs):
     '''
     copy the modification of one file to duplicate files.
     Feb. 4th, 2020, 
@@ -151,15 +112,13 @@ def copy_modification(origfile, targets_other, inputrange=[0, -1], outputrange=[
     '''
     with open(origfile, 'r') as infile:
         content=infile.readlines()
-    content_mod_pd=_extract_txt(content, inputrange, section, private, 'input')[1]
-    private_group1=_group_private(content_mod_pd)
+    content_mod_pd=_extract_txt(content, inputRows, section)[1]
 
     for target in targets_other:
         with open (target, 'r') as outfile:
             content_out=outfile.readlines()
-        content_out_pd, content_out_mod_pd=_extract_txt(content_out, outputrange, section, private, 'output')
+        content_out_pd, content_out_mod_pd=_extract_txt(content_out, outputRows, section)
 
-        private_group2=_group_private(content_out_mod_pd)
         if append==True:
             startrow=content_out_mod_pd['row number'].iloc[-1]
             content_out=content_out_pd['content'].to_list()
@@ -168,18 +127,7 @@ def copy_modification(origfile, targets_other, inputrange=[0, -1], outputrange=[
             content_out_basic=content_out_pd.append(content_out_mod_pd, ignore_index=True)
             content_out_basic=pd.concat([content_out_pd, content_out_mod_pd]).drop_duplicates(subset='row number', keep=False)
             content_out=content_out_basic['content'].to_list()
-        matched=private_group1['content'].isin(private_group2['content'])
-        private_startlines=private_group1.loc[~matched['sum']]['row number']['first'].to_numpy()
-        private_stoplines=private_group1.loc[~matched['sum']]['row number']['last'].to_numpy()+1
-        private_ranges=np.transpose(np.vstack([private_startlines, private_stoplines]))
-        if len(private_ranges) ==0:
-            content_mod=content_mod_pd['content'].tolist()
-        else:
-            for private_range in private_ranges:
-                condition=(content_mod_pd['row number'] >=private_range[0]) & (content_mod_pd['row number'] < private_range[1])
-                content_mod_pd['content'].loc[condition]='# '+content_mod_pd['content'].loc[condition]
-            content_mod=content_mod_pd['content'].tolist()
-            content_mod_pd['content'].loc[condition]=content_mod_pd['content'].loc[condition].str.replace('# ','',1, regex=True)
+        content_mod=content_mod_pd['content'].tolist()
         row=startrow
         for line in content_mod:
             content_out.insert(row, line)
