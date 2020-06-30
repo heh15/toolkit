@@ -11,6 +11,8 @@ from subprocess import call, Popen, PIPE
 import numpy as np
 import pandas as pd
 import datetime
+import click
+from textmatch import finditer_with_line_numbers
 
 ### find the directory for the file
 def find_targets(filename, directory, dimensions=0, subfolders='all', cwd=True):
@@ -68,40 +70,91 @@ def write_targets(targets, folder='.', scriptName=''):
             output.write('scp -r heh15@laburnum:'+str(target)+' '+folder+' \n')
   
 ### copy the modification into similar files.
-def _extract_txt(content, Rows, section):
-    ''' only used inside the module
-    To do:
-    Insert lines. 
-    '''    
-    content_pd=pd.DataFrame(content, columns=['content'])
-    content_pd['row number']=content_pd.index
-    # start from the '# main program'. 
-    startindexes=content_pd.loc[content_pd['content'].str.contains(section, regex=False)].reset_index(drop=True)
-    if len(startindexes)!=0:
-        startline=startindexes['row number'][0]-1
-        content_mod_pd=content_pd.loc[content_pd['row number']>=startline]
+def _extract_txt(content, Rows, section, matchpattern=''):
+    ''' 
+    only used inside the module
+
+    '''
+    
+    content_pd = pd.DataFrame(content, columns=['content'])
+    content_pd['row number'] = content_pd.index
+
+    # choose the content of the certain section. 
+    startindexes = content_pd.loc[content_pd['content'].str.contains(section, regex=False)].reset_index(drop=True)
+    if len(startindexes) != 0:
+        startline = startindexes['row number'][0]-1
+        content_mod_pd = content_pd.loc[content_pd['row number']>=startline]
     else:
-        startindexes=content_pd.loc[content_pd['content'].str.contains('main program', regex=False)].reset_index(drop=True)
-        startline=startindexes['row number'][0]-1
-        newline= pd.DataFrame({"content": "#"*60, "row number": startline}, index=[(startline)])
-        content_pd['row number'].iloc[(startline):]=content_pd['row number'].iloc[(startline):]+1
-        content_pd=pd.concat([content_pd.iloc[:(startline)], newline, content_pd.iloc[(startline):]]).reset_index(drop=True)
-        content_mod_pd=content_pd.loc[content_pd['row number']>=startline]
-    stopindexes=content_mod_pd.loc[content_mod_pd['content'].str.contains('\#{60}', regex=True)].reset_index(drop=True)
-    if len(stopindexes)>1:
-        stopline=stopindexes['row number'][stopindexes.index[1]]
-        content_mod_pd=content_mod_pd.loc[content_mod_pd['row number']<stopline]
-    content_mod_pd=content_mod_pd.loc[content_mod_pd['row number']>=Rows[0]]
-    if Rows[1]!=-1:
-        content_mod_pd=content_mod_pd.loc[content_mod_pd['row number']<=Rows[1]]
-    content_mod_pd=content_mod_pd.reset_index(drop=True)
+        startindexes = content_pd.loc[content_pd['content'].str.contains('main program', regex=False)].reset_index(drop=True)
+        startline = startindexes['row number'][0]-1
+        newline = pd.DataFrame({"content": "#"*60, "row number": startline}, index=[(startline)])
+        content_pd['row number'].iloc[(startline):] = content_pd['row number'].iloc[(startline):]+1
+        content_pd = pd.concat([content_pd.iloc[:(startline)], newline, content_pd.iloc[(startline):]]).reset_index(drop=True)
+        content_mod_pd = content_pd.loc[content_pd['row number']>=startline]
+    stopindexes = content_mod_pd.loc[content_mod_pd['content'].str.contains('\#{60}', regex=True)].reset_index(drop=True)
+    if len(stopindexes) > 1:
+        stopline = stopindexes['row number'][stopindexes.index[1]]
+        content_mod_pd = content_mod_pd.loc[content_mod_pd['row number'] < stopline]
+
+    # choose the content within certain rows. 
+    content_mod_pd = content_mod_pd.loc[content_mod_pd['row number'] >= Rows[0]]
+    if Rows[1] != -1:
+        content_mod_pd = content_mod_pd.loc[content_mod_pd['row number'] <= Rows[1]]
+
+    # choose the content in matched group. 
+    if matchpattern != '':
+        content_mod_str = ''.join(content_mod_pd['content'].tolist())
+        matches = re.findall(matchpattern, content_mod_str, flags=re.DOTALL)        
+        if len(matches) == 1:
+            content_str = ''.join(content_pd['content'].tolist())
+            match = finditer_with_line_numbers(matchpattern, content_str, flags=re.DOTALL)[0]         
+            startline = match[1]; stopline = match[2]
+            content_mod_pd = content_mod_pd.loc[content_mod_pd['row number'] >= startline]
+            content_mod_pd = content_mod_pd.loc[content_mod_pd['row number'] < stopline]
+        if len(matches) > 1:
+            print('Find more than one matched text')
+        if len(matches) == 0:
+            print("Can not find matched text")
 
     return content_pd, content_mod_pd
 
 
-def copy_modification(origfile, targets_other, inputRows=[0, -1], outputRows=[0, -1], section='main program', append=False, **kwargs):
+
+def modify_targets(origfile, targets_other, inputRows=[0, -1], outputRows=[0, -1],
+                   section='main program', mode = 'insert', matchpattern='',
+                   intext='', force=True, show=False, add_spaceline = True):
     '''
     copy the modification of one file to duplicate files.
+    ---
+    Parameters:
+    origfile: file path or str 
+        The path of the file which is the source of the modifcation. 
+    targets_other: list of file path or strs
+        The list of files to be modified. 
+    inputrows: 2-element array
+        The start and end of the row number of the text in origfile for modification
+    outputrows: 2-element array
+        The start and end of the row number of the text in targets_other for modifcation. 
+    mode: str
+        It has option of 'insert' or 'replace'
+        insert: insert the text for modification from origfile into the targets_others
+        replace: replace the text for modifcation in targets_other by text for modification in origfile. 
+    matchpattern: regex expression
+        Match the pattern in targets_other. If mode = 'insert', the match pattern match the text right before
+        the inserted text. If mode = 'replace', it matches the text to be replaced by the inserted text. 
+    intext: str
+        The text from origfile to be input into targets_other for modification.  
+    force: bool
+        It determines if the modifcation continues without user input 'Y'. 
+    show: bool
+        It determines if the match pattern in targets_other will show in screen. 
+    add_spaceline: bool
+        It determines if a space line will be inserted before the inserted text. 
+
+    ---
+    Log: 
+    June 29th, 2020
+    1) Consider the case where it has one and only one match. 
     Feb. 4th, 2020, 
     1) can comment out private regions while moving it to other scripts.
     Jan. 31st, 2020, 
@@ -111,30 +164,46 @@ def copy_modification(origfile, targets_other, inputRows=[0, -1], outputRows=[0,
     Jan. 12th, 2020, only substitute main program part. 
     '''
     with open(origfile, 'r') as infile:
-        content=infile.readlines()
-    content_mod_pd=_extract_txt(content, inputRows, section)[1]
+        content_in = infile.readlines()
+    if intext == '':
+        content_in_mod_pd = _extract_txt(content_in, inputRows, section)[1]
+        content_in_mod = content_in_mod_pd['content'].tolist()
+    else:
+        content_in_mod = [line+'\n' for line in intext.split('\n')]
 
     for target in targets_other:
         with open (target, 'r') as outfile:
-            content_out=outfile.readlines()
-        content_out_pd, content_out_mod_pd=_extract_txt(content_out, outputRows, section)
+            content_out = outfile.readlines()
+        content_out_pd, content_out_mod_pd = _extract_txt(content_out, outputRows, section,
+                                                          matchpattern=matchpattern)
+        if show == True:
+            print(content_out_mod_pd)
+        if force == False:
+            if click.confirm('Do you want to continue?', default=True) == False:
+                continue
 
-        if append==True:
-            startrow=content_out_mod_pd['row number'].iloc[-1]
-            content_out=content_out_pd['content'].to_list()
+        if mode in ['insert', 'replace']:
+            if mode == 'insert':
+            # insert modification into the end of the section. 
+                startrow = content_out_mod_pd['row number'].iloc[-1]+1
+                content_out = content_out_pd['content'].to_list()
+                if add_spaceline == True:
+                    content_in_mod.insert(0, '\n')
+            if mode == 'replace':
+                startrow = content_out_mod_pd['row number'].iloc[0]
+                content_out_rest = pd.concat([content_out_pd, content_out_mod_pd]).drop_duplicates(subset='row number', keep=False)                
+                content_out = content_out_rest['content'].to_list()
+            
+            row = startrow
+            for line in content_in_mod:
+                content_out.insert(row, line)
+                row=row+1
+            with open (target, 'w') as outfile:
+                for line in content_out:
+                    outfile.write(line)
         else:
-            startrow=content_out_mod_pd['row number'][0]
-            content_out_basic=content_out_pd.append(content_out_mod_pd, ignore_index=True)
-            content_out_basic=pd.concat([content_out_pd, content_out_mod_pd]).drop_duplicates(subset='row number', keep=False)
-            content_out=content_out_basic['content'].to_list()
-        content_mod=content_mod_pd['content'].tolist()
-        row=startrow
-        for line in content_mod:
-            content_out.insert(row, line)
-            row=row+1
-        with open (target, 'w') as outfile:
-            for line in content_out:
-                outfile.write(line)
+            print("wrong input for 'mode' parameter")
+
         
     return targets_other
 
