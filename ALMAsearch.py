@@ -1,14 +1,26 @@
+import pandas as pd
+from astroquery.alma import Alma
+from astroquery.ned import Ned
+import numpy as np
+import time
+import re
+from astropy.table import Table
+import sys, os
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+from astroquery.alma import Alma
+from astropy.table import join, vstack, unique
+from astropy.table import Table, QTable
+import pickle
+from astropy.io import ascii
+
+
 def Table_sort(surveyTable, columns_array):
-    '''
-    surveyTable is an astroTable object.
-    columns_array is a 2D array for setting criterions for multiple columns
-       'and' condition in first dimension. 
-       'or' condition in second dimension. 
-    '''
-    surveyTable_group = surveyTable.group_by('ALMA sanitized source name')
+
+    surveyTable_group = surveyTable.group_by('NED source name')
     selectedTable = QTable()
-    for source in surveyTable_group.groups.keys['ALMA sanitized source name']: 
-        mask = surveyTable_group.groups.keys['ALMA sanitized source name'] == source
+    for source in surveyTable_group.groups.keys['NED source name']: 
+        mask = surveyTable_group.groups.keys['NED source name'] == source
         sourceTable = surveyTable_group.groups[mask]
         conditions = []
         for columns in columns_array:
@@ -23,7 +35,72 @@ def Table_sort(surveyTable, columns_array):
             else:
                 selectedTable = vstack([selectedTable, sourceTable])
 
-    return selectedTable
+    sourcelist = pd.DataFrame()
+    names=selectedTable.group_by('NED source name').groups.keys['NED source name']
+    names=list(names)
+    RAs=[];Decs=[]
+    for source in names:
+        mask = surveyTable_group.groups.keys['NED source name'] == source
+        sourceTable = surveyTable_group.groups[mask]
+        RAs.append(sourceTable['ALMA RA'][0])
+        Decs.append(sourceTable['ALMA Dec'][0])
+
+    sourcelist['name']=names; sourcelist['RA']=RAs; sourcelist['Dec']=Decs
+                
+    return selectedTable, sourcelist
+
+
+
+def stack_table(queryResults):
+    targets=list(queryResults.keys())
+    surveyTable=QTable()
+    freqrangelist=[]
+    freqreslist=[]
+    linesenslist=[]
+    linesensnlist=[]
+    pollist=[]
+    for i in range(len(targets)):
+        if len(queryResults[targets[i]])>0:
+            tempTable = queryResults[targets[i]].copy()
+            for freqra in tempTable['Frequency ranges']:
+                freqrangelist.append(freqra)
+            for freqres in tempTable['Frequency resolution']:
+                freqreslist.append(freqres)
+            for linesens in tempTable['Line sensitivity (10 km/s)']:
+                linesenslist.append(linesens)
+            for linesensn in tempTable['Line sensitivity (native)']:
+                linesensnlist.append(linesensn)
+            for pol in tempTable['Pol products']:
+                pollist.append(pol)
+
+            tempTable.remove_column('Frequency ranges')
+            tempTable.remove_column('Frequency resolution')
+            tempTable.remove_column('Line sensitivity (10 km/s)')
+            tempTable.remove_column('Line sensitivity (native)')
+            tempTable.remove_column('Pol products')
+            if len(surveyTable)==0:
+                surveyTable=tempTable.copy()
+            else:
+                surveyTable=vstack([surveyTable, tempTable])
+    
+    surveyTable['Frequency ranges']=freqrangelist; surveyTable['Frequency ranges'].unit=u.GHz
+    surveyTable['Frequency resolution']=freqreslist; surveyTable['Frequency resolution'].unit=u.kHz
+    surveyTable['Line sensitivity (10 km/s)']=linesenslist; surveyTable['Line sensitivity (10 km/s)'].unit=u.mJy/u.beam
+    surveyTable['Line sensitivity (native)']=linesensnlist; surveyTable['Line sensitivity (native)'].unit=u.mJy/u.beam
+    surveyTable['Pol products']=pollist
+    columns=list(surveyTable.columns)
+    index=columns.index('NED source name')
+    columns.insert(0,columns.pop(index))
+    index=columns.index('Scientific category')
+    columns.insert(2,columns.pop(index))
+    index=columns.index('Science keyword')
+    columns.insert(3,columns.pop(index))
+    surveyTable=surveyTable[columns]
+
+
+    return surveyTable
+
+
 
 
 def Coordinate_match(df1, df2, columns):
@@ -49,3 +126,26 @@ def Coordinate_match(df1, df2, columns):
     df1 = pd.concat([df1, df3], axis=1)
         
     return df1
+
+
+def Ned_query_dist(df, H_0=69.6):
+    distances = []
+    for index in df.index:
+        coordinate = SkyCoord(ra=df['RA'][index]*u.degree, dec= df['Dec'][index]*u.degree)
+        result = Ned.query_region(coordinate, radius=20*u.arcsec)
+        typeInds = np.where(result['Type'] != b'G')
+        result.remove_rows(typeInds)
+        if len(result) > 0:
+            if np.where(~np.isnan(result['Velocity']))[0].size > 0:
+                index2 = np.where(~np.isnan(result['Velocity']))[0]
+                velocity = result['Velocity'][index2[0]]                     
+                distance = velocity/H_0
+                distances.append(distance)
+            else:
+                distances.append(np.nan)
+        else:
+            distances.append(np.nan)
+
+    df['distance'] = distances
+
+    return df
