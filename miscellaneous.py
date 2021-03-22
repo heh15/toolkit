@@ -26,3 +26,35 @@ def round_sig(x, sig=2):
     round the x to certain significant figures
     '''
     return round(x, sig-int(floor(log10(abs(x))))-1)
+
+
+def regrid_time(xdata, ydata, xtime, ytime):
+    '''
+    synchronize the two time series
+    ------
+    paramters:
+    xdata: np.ndarray.
+        array of data to be synchronized to
+    ydata: np.ndarray
+        array of data to be synchronized
+    xtime: np.ndarray.
+        array of time the xdata is taken
+    ytime: np.ndarray.
+        array of time the ydata is taken
+    ------
+    retrun: 
+    ydata_regridded: np.array
+        regridded ydata with same shape as xdata
+    '''
+    ydata_regridded = np.full(np.shape(xdata), np.nan)
+
+    # match the xtime with ytime 
+    dist = np.abs(ytime[:, np.newaxis] - xtime)
+    potentialClosest = dist.argmin(axis=1)
+    closestFound, closestCounts = np.unique(potentialClosest, return_counts=True)
+    ydata_group = np.split(ydata, np.cumsum(closestCounts)[:-1])
+
+    for i, index in enumerate(closestFound):
+        ydata_regridded[index] = np.nanmean(ydata_group[i])
+
+    return ydata_regridded
