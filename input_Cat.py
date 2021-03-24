@@ -57,3 +57,25 @@ def Coords_cal(dictionary):
     Table = Table.drop('sign', axis=1)
 
     return Table
+
+
+def match_coords_cart(coords1, coords2):
+    '''
+    Select the coordinates in df2 that is closest to every object in df1
+    ------
+    Paramters:
+    coords1: np.ndarray
+        Numpy array of 3D cartisan coordinates with shape of (:, 3).
+    coords2: np.ndarray
+        Numpy array of 3D cartisan coordinates with shape of (:, 3). 
+    ------
+    return
+    coords2_matched: np.ndarray
+        Indexes of matched object in coords2
+    '''
+    # get the difference between each vector from coords1 and coords2
+    diff = coords1[:,np.newaxis, :] - coords2
+    dist = np.sqrt(np.sum(np.square(diff), axis=2))
+    coords2_matched = np.nanargmin(dist, axis=1)
+
+    return coords2_matched
