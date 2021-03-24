@@ -1,4 +1,20 @@
 def read_ascii(filename, columns, colnumber):
+    '''
+    Read the ascii table with fixed column width
+    ------
+    parameters
+    filename: str
+        The path to the file with table
+    columns: list
+        list of column names to be assigned. The name of coordinates 
+    are ['RAh', 'RAm', 'RAs', 'Ded', 'Dem', 'Des']
+    colnumber: 2D list
+        list of start and end column numbers for each column
+    ------
+    return
+    dictionary: dict
+        dictionary of extracted columns. 
+    ''' 
     Table3 = pd.DataFrame()
     dictionary = dict.fromkeys(columns)
     for i in range(len(columns)):
@@ -20,6 +36,17 @@ def read_ascii(filename, columns, colnumber):
     return dictionary
 
 def Coords_cal(dictionary):
+    '''
+    Calculate the coordinates for the dictionary extracted from ascii table
+    ------
+    parameters
+    dictionary: dict
+        dictionaries from "read_ascii()" function
+    ------
+    return
+    Table: pd.DataFrame
+        Dataframe of coordinates 
+    '''
     Table = pd.DataFrame()
     rah = dictionary['RAh']['value']; ram = dictionary['RAm']['value']; ras = dictionary['RAs']['value']
     ded = dictionary['Ded']['value']; dem= dictionary['Dem']['value']; des = dictionary['Des']['value']
