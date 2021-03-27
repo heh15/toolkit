@@ -53,38 +53,6 @@ def match_lines(surveyTable, columns_array):
                 
     return selectedTable, sourcelist
 
-# def match_lines(Results, columns_array):
-
-#     selectedTable = QTable()
-#     names = []
-#     for source in Results.keys(): 
-#         conditions = []
-#         for columns in columns_array:
-#             conditions_temp = []
-#             for column in columns:
-#                 condition = (True in Results[source][column])
-#                 conditions_temp.append(condition)
-#             conditions.append((any(conditions_temp)))
-#         if all(conditions):
-#             names.append(source)
-#             if len(selectedTable) == 0:
-#                 selectedTable = Results[source].copy()
-#             else:
-#                 selectedTable = vstack([selectedTable, Results[source].copy()])
-                
-#     sourcelist = pd.DataFrame()
-#     if len(selectedTable) == 0:
-#         print('no targets found')
-#     else: 
-#         RAs=[];Decs=[]
-#         for source in names:
-#             RAs.append(Results[source]['ALMA RA'][0])
-#             Decs.append(Results[source]['ALMA Dec'][0])
-
-#         sourcelist['name']=names; sourcelist['RA']=RAs; sourcelist['Dec']=Decs
-                
-#     return selectedTable, sourcelist
-
 
 def find_NEDCoords(sourceNames, searchradius=1*u.arcmin):
     Coords = []
