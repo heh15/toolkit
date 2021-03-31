@@ -58,3 +58,30 @@ def regrid_time(xdata, ydata, xtime, ytime):
         ydata_regridded[index] = np.nanmean(ydata_group[i])
 
     return ydata_regridded
+
+def smooth_data(data, time, timebin=30):
+    '''
+    Smooth the data by every certain length of time. Note the length of smoothed data
+    is the same as the original data. 
+    ------
+    parameters:
+    data: np.ndarray
+        array of data to be smoothed
+    time: np.ndarray
+        time series of the data taken
+    timbine: float64
+        The time used to average the data
+    ------
+    return:
+    data_smooth: np.ndarray
+        smoothed data
+    '''
+    data_smooth = np.full(np.shape(time), np.nan)
+    for i in range(np.shape(time)[0]):
+        conditions = ~((time >= time[i]) & (time <= (time[i]+30)))
+        data_temp = np.copy(data)
+        data_temp[np.where(conditions)] = np.nan
+        data_smooth[i] = np.nanmean(data_temp)
+
+    return data_smooth
+
