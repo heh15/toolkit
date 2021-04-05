@@ -28,6 +28,26 @@ def round_sig(x, sig=2):
     return round(x, sig-int(floor(log10(abs(x))))-1)
 
 
+def find_nearest(array, value):
+    '''
+    Find the index of the value in the array closest to the given value
+    ------
+    Parameters:
+    array: numpy.ndarray
+        numpy array to be matched
+    value: float64
+        value to be matched with numpy array
+    ------
+    Return:
+    idx: int
+        index of the closest value in array.
+    '''
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+
+    return idx
+
+
 def regrid_time(xdata, ydata, xtime, ytime):
     '''
     synchronize the two time series
