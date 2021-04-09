@@ -48,9 +48,9 @@ def find_nearest(array, value):
     return idx
 
 
-def regrid_time(xdata, ydata, xtime, ytime):
+def regrid_time(xdata, ydata, xtime, ytime, 
+                interval=1.0):
     '''
-    synchronize the two time series
     ------
     paramters:
     xdata: np.ndarray.
@@ -61,6 +61,9 @@ def regrid_time(xdata, ydata, xtime, ytime):
         array of time the xdata is taken
     ytime: np.ndarray.
         array of time the ydata is taken
+    interval: float
+        maximal alllowd time difference between matched two time
+    series. 
     ------
     retrun: 
     ydata_regridded: np.array
@@ -71,6 +74,9 @@ def regrid_time(xdata, ydata, xtime, ytime):
     # match the xtime with ytime 
     dist = np.abs(ytime[:, np.newaxis] - xtime)
     potentialClosest = dist.argmin(axis=1)
+    diff = dist.min(axis=1)
+    # leave out the time with spacing greater than the interval of original time.
+    ydata[np.where(diff > interval)] = np.nan
     closestFound, closestCounts = np.unique(potentialClosest, return_counts=True)
     ydata_group = np.split(ydata, np.cumsum(closestCounts)[:-1])
 
