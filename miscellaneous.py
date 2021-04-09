@@ -43,7 +43,7 @@ def find_nearest(array, value):
         index of the closest value in array.
     '''
     array = np.asarray(array)
-    idx = (np.abs(array - value)).argmin()
+    idx = np.nanargmin(np.abs(array - value))
 
     return idx
 
