@@ -90,3 +90,72 @@ def average_spws(spws, iant=0, spw_template=None):
 
     return data_avg, time
 
+def average_Tsys(Tsys_spectrum, chan_trim=5):
+    '''
+    Average the system temperature over the frequency axis
+    ------
+    Parameters
+    Tsys_spectrum: np.ndarray
+        The extracted Tsys spectrum from tb.getcol()
+    chan_trim: int
+        number of channels trimed at the edge of spectrum
+    ------
+    Return 
+    Tsys: np.ndarray
+        Averaged Tsys
+    '''
+    Tsys_avg1 = np.mean(Tsys_spectrum, axis=0)
+    Tsys_avg2 = Tsys_avg1[chan_trim: (len(Tsys_avg1)-chan_trim)]
+    Tsys = np.mean(Tsys_avg2, axis=0)
+
+    return Tsys
+
+def select_spw_Tsys(Tsys, spw):
+    '''
+    Select Tsys with given spectral window
+    ------
+    Parameters
+    Tsys: np.ndarray
+        Averaged Tsys
+    spw: int
+        Spectral window to be selected
+    ------
+    Return
+    Tsys_sinspw: np.ndarray
+        Tsys with single spectral window
+    '''
+    Tsys_temp = np.copy(Tsys)
+    Tsys_temp[np.where(spws!=spw_Tsys)] = np.nan
+    Tsys_sinspw = Tsys_temp[~np.isnan(Tsys_temp)]
+
+    return Tsys_sinspw
+
+def normalize_Tsys(Tsys_sinspw, isin_phase, isin_sci, isin_bpass):
+    '''
+    Normalize Tsys by the start of Tsys for phasecal, science and bandpass 
+    respectively
+    ---
+    Parameters
+    Tsys_sinspw: np.ndarray
+        Tsys for single spectral window
+    isin_phase: np.ndarray
+        Indexes of Tsys for phasecal
+    isin_sci: np.ndarray
+        Indexes of Tsys for science observation
+    isin_bpass: np.ndarray
+        Indexes of Tsys for bandpass
+    ------
+    Return
+    Tsys_norm: np.ndarray
+        Normalized Tsys
+    '''
+    Tsys_norm = np.full(np.shape(Tsys_sinspw), np.nan)
+    Tsys_norm[isin_phase] = Tsys_sinspw[isin_phase] / 
+        Tsys_sinspw[isin_phase[0][0]]
+    Tsys_norm[isin_sci] = Tsys_sinspw[isin_sci] / 
+        Tsys_sinspw[isin_sci[0][0]]
+    Tsys_norm[isin_bpass] = Tsys_sinspw[isin_bpass] / 
+        Tsys_sinspw[isin_sci[0][0]]
+
+    return Tsys_norm
+
