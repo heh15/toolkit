@@ -1,6 +1,7 @@
-def read_ascii(filename, columns, colnumber):
+def read_ascii(filename, columns, colnumber, skiprows=0):
     '''
     Read the ascii table with fixed column width
+    Can be replaced by the pd.readfwf()
     ------
     parameters
     filename: str
@@ -9,54 +10,55 @@ def read_ascii(filename, columns, colnumber):
         list of column names to be assigned. The name of coordinates 
     are ['RAh', 'RAm', 'RAs', 'Ded', 'Dem', 'Des']
     colnumber: 2D list
-        list of start and end column numbers for each column
+        list of start and end column numbers for each column. The start value is 
+    the start column number in text file minus one. The end value is the end column
+    number. 
     ------
     return
-    dictionary: dict
-        dictionary of extracted columns. 
-    ''' 
-    Table3 = pd.DataFrame()
-    dictionary = dict.fromkeys(columns)
-    for i in range(len(columns)):
-        dictionary[columns[i]] = {'value': [], 'colnumber': colnumber[i]}
+    dataFrame: pd.DataFrame
+        DataFrame of the extracted columns
+    '''
+    dataFrame = pd.DataFrame(columns=columns)
     with open (filename, 'r') as infile:
         text = infile.readlines()
-        text = text[152:]
+        text = text[skiprows:]
         line = text[0]
         for line in text:
-            for key in dictionary.keys():
-                lower = dictionary[key]['colnumber'][0]
-                upper = dictionary[key]['colnumber'][-1]
-                dictionary[key]['value'].append(line[lower:upper])
+            row = dict.fromkeys(columns)
+            for i, column in enumerate(columns):
+                lower = colnumber[i][0]
+                upper = colnumber[i][-1]
+                row[column] = line[lower:upper]
+            dataFrame = dataFrame.append(row, ignore_index=True)
 
     coordsName = ['RAh', 'RAm', 'RAs','Ded', 'Dem', 'Des']
-    for key in coordsName:
-        dictionary[key]['value'] = np.float_(dictionary[key]['value'])
+    for column in coordsName:
+        if column in columns:
+            dataFrame[column] = dataFrame[column].astype(float)
 
-    return dictionary
+    return dataFrame
 
-def Coords_cal(dictionary):
+def Coords_cal(dataFrame):
     '''
-    Calculate the coordinates for the dictionary extracted from ascii table
+    Calculate the coordinates for the pd.DataFrame extracted from ascii table
     ------
     parameters
-    dictionary: dict
-        dictionaries from "read_ascii()" function
+    dataFrame: pd.DataFrame
+        dataFrame from "read_ascii()" function
     ------
     return
     Table: pd.DataFrame
         Dataframe of coordinates 
     '''
-    Table = pd.DataFrame()
-    rah = dictionary['RAh']['value']; ram = dictionary['RAm']['value']; ras = dictionary['RAs']['value']
-    ded = dictionary['Ded']['value']; dem= dictionary['Dem']['value']; des = dictionary['Des']['value']
-    sign = dictionary['sign']['value']
-    Table['RA'] = 15*(rah+ram/60+ras/3600)
-    Table['Dec'] = ded+dem/60+des/3600; Table['sign'] = sign
-    Table['Dec'].loc[Table['sign'] == '-'] = -1*Table['Dec'].loc[Table['sign'] == '-']
-    Table = Table.drop('sign', axis=1)
+    rah = dataFrame['RAh']; ram = dataFrame['RAm']; ras = dataFrame['RAs']
+    ded = dataFrame['Ded']; dem= dataFrame['Dem']; des = dataFrame['Des']
+    sign = dataFrame['sign']
+    dataFrame['RA'] = 15*(rah+ram/60+ras/3600)
+    dataFrame['Dec'] = ded+dem/60+des/3600
+    dataFrame['Dec'].loc[dataFrame['sign'] == '-'] = -1*dataFrame['Dec'].loc[dataFrame['sign'] == '-']
+    dataFrame = dataFrame.drop('sign', axis=1)
 
-    return Table
+    return dataFrame
 
 
 def match_coords_cart(coords1, coords2):
