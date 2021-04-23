@@ -35,13 +35,14 @@ def beam_get(imagename, region_init, ratio=2.0, **kwarg):
 
     return regions
 
-# need to execute tb.open(vis) first
 # need to import the regrid_time() from miscellenious.py
-def average_spws(spws, iant=0, spw_template=None):
+def average_spws(vis, spws, iant=0, spw_template=None):
     '''
     Average data among different spectral windows
     ------
     Parameters:
+    vis: str
+        Path to the measurement set 
     spws: list
         List of spectral windows
     iant: int
@@ -55,6 +56,9 @@ def average_spws(spws, iant=0, spw_template=None):
     time: np.ndarray
         time corresonding to averaged data 
     '''
+    # read table 
+    tb.open(vis)
+
     # initalize variables
     if spw_template == None:
         spw_template = spws[0]
@@ -63,12 +67,13 @@ def average_spws(spws, iant=0, spw_template=None):
     for i in spws:
         data_label = 'spw '+str(i)+' data'
         time_label = 'spw '+str(i)+' time'
-        dat = tb.query('ANTENNA1==%d && ANTENNA2==%d && DATA_DESC_ID ==%d && SCAN_NUMBER not in %s'%(iant,iant,i, scan_ATM))
+        dat = copytb.query('ANTENNA1==%d && ANTENNA2==%d && DATA_DESC_ID ==%d && SCAN_NUMBER not in %s'%(iant,iant,i, scan_ATM))
         data = np.mean(np.real(dat.getcol('DATA')), axis=(0,1))
         time = dat.getcol('TIME')
         Table[data_label] = data
         Table[time_label] = time
 
+    tb.close()
     # regrid the data to the time of the first data
     data_columns = []
     for i in spws:
@@ -90,6 +95,7 @@ def average_spws(spws, iant=0, spw_template=None):
 
     return data_avg, time
 
+
 def average_Tsys(Tsys_spectrum, chan_trim=5):
     '''
     Average the system temperature over the frequency axis
@@ -110,25 +116,27 @@ def average_Tsys(Tsys_spectrum, chan_trim=5):
 
     return Tsys
 
-def select_spw_Tsys(Tsys, spw):
+def select_spw_Tsys(Tsys, spws, spwid):
     '''
     Select Tsys with given spectral window
     ------
     Parameters
     Tsys: np.ndarray
         Averaged Tsys
-    spw: int
+    spws: np.ndarray
+        Array of spectral window ids attached to each measurement
+    spwid: int
         Spectral window to be selected
     ------
     Return
     Tsys_sinspw: np.ndarray
         Tsys with single spectral window
     '''
-    Tsys_temp = np.copy(Tsys)
-    Tsys_temp[np.where(spws!=spw_Tsys)] = np.nan
-    Tsys_sinspw = Tsys_temp[~np.isnan(Tsys_temp)]
+
+    Tsys_sinspw = Tsys[np.where(spws==spwid)]
 
     return Tsys_sinspw
+
 
 def normalize_Tsys(Tsys_sinspw, isin_phase, isin_sci, isin_bpass):
     '''
