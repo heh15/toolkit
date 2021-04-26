@@ -158,12 +158,12 @@ def normalize_Tsys(Tsys_sinspw, isin_phase, isin_sci, isin_bpass):
         Normalized Tsys
     '''
     Tsys_norm = np.full(np.shape(Tsys_sinspw), np.nan)
-    Tsys_norm[isin_phase] = Tsys_sinspw[isin_phase] / 
-        Tsys_sinspw[isin_phase[0][0]]
-    Tsys_norm[isin_sci] = Tsys_sinspw[isin_sci] / 
-        Tsys_sinspw[isin_sci[0][0]]
-    Tsys_norm[isin_bpass] = Tsys_sinspw[isin_bpass] / 
-        Tsys_sinspw[isin_sci[0][0]]
+    isins = [isin_phase, isin_sci, isin_bpass]
+
+    for isin in isins:
+        if len(isin[0]) == 0:
+            continue
+        else:
+            Tsys_norm[isin] = Tsys_sinspw[isin] / Tsys_sinspw[isin[0][0]]
 
     return Tsys_norm
-
