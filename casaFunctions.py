@@ -96,7 +96,7 @@ def average_spws(vis, spws, iant=0, spw_template=None):
     return data_avg, time
 
 
-def average_Tsys(Tsys_spectrum, chan_trim=5):
+def average_Tsys(Tsys_spectrum, chan_trim=5, average_spw=False, spws=[]):
     '''
     Average the system temperature over the frequency axis
     ------
@@ -105,6 +105,11 @@ def average_Tsys(Tsys_spectrum, chan_trim=5):
         The extracted Tsys spectrum from tb.getcol()
     chan_trim: int
         number of channels trimed at the edge of spectrum
+    average_spw: bool
+        This determines whether to average Tsys measurements over different 
+    spectral windows. 
+    spws: np.ndarray
+        The extracted spectral window array for Tsys measurements
     ------
     Return 
     Tsys: np.ndarray
@@ -113,6 +118,15 @@ def average_Tsys(Tsys_spectrum, chan_trim=5):
     Tsys_avg1 = np.mean(Tsys_spectrum, axis=0)
     Tsys_avg2 = Tsys_avg1[chan_trim: (len(Tsys_avg1)-chan_trim)]
     Tsys = np.mean(Tsys_avg2, axis=0)
+
+    if (average_spw == True) and len(spws) != 0:
+        spw_unique = np.unique(spws)
+        shape = (len(spw_unique), len(Tsys)/len(spw_unique))
+        Tsys_temp = np.full(shape, np.nan)
+        for i, spw in enumerate(np.unique(spws)):
+            Tsys_temp[i] = Tsys[np.where(spws==spw)]
+
+        Tsys = np.mean(Tsys_temp, axis=0)
 
     return Tsys
 
