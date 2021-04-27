@@ -67,7 +67,7 @@ def average_spws(vis, spws, iant=0, spw_template=None):
     for i in spws:
         data_label = 'spw '+str(i)+' data'
         time_label = 'spw '+str(i)+' time'
-        dat = copytb.query('ANTENNA1==%d && ANTENNA2==%d && DATA_DESC_ID ==%d && SCAN_NUMBER not in %s'%(iant,iant,i, scan_ATM))
+        dat = tb.query('ANTENNA1==%d && ANTENNA2==%d && DATA_DESC_ID ==%d && SCAN_NUMBER not in %s'%(iant,iant,i, scan_ATM))
         data = np.mean(np.real(dat.getcol('DATA')), axis=(0,1))
         time = dat.getcol('TIME')
         Table[data_label] = data
