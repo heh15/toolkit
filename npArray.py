@@ -1,19 +1,19 @@
-def find_nearest(array, value):
+def find_nearest(array, values):
     '''
-    Find the index of the value in the array closest to the given value
+    Find the index of the values in the array closest to the given value
     ------
     Parameters:
     array: numpy.ndarray
         numpy array to be matched
-    value: float64
-        value to be matched with numpy array
+    values: numpy.ndarray or float64
+        values to be matched with numpy array
     ------
     Return:
     idx: int
         index of the closest value in array.
     '''
     array = np.asarray(array)
-    idx = np.nanargmin(np.abs(array - value))
+    idx = np.nanargmin((np.abs(array[:,np.newaxis] - values)), axis=0)
 
     return idx
 
