@@ -152,7 +152,7 @@ def select_spw_Tsys(Tsys, spws, spwid):
     return Tsys_sinspw
 
 
-def normalize_Tsys(Tsys_sinspw, isin_phase, isin_sci, isin_bpass):
+def normalize_Tsys(Tsys_sinspw, isin_phase, isin_sci, isin_bpass, normScans=[0,0,0]):
     '''
     Normalize Tsys by the start of Tsys for phasecal, science and bandpass 
     respectively
@@ -166,6 +166,8 @@ def normalize_Tsys(Tsys_sinspw, isin_phase, isin_sci, isin_bpass):
         Indexes of Tsys for science observation
     isin_bpass: np.ndarray
         Indexes of Tsys for bandpass
+    normScans: list
+        List of indices of Tsys to be normalized for each type of data
     ------
     Return
     Tsys_norm: np.ndarray
@@ -174,10 +176,10 @@ def normalize_Tsys(Tsys_sinspw, isin_phase, isin_sci, isin_bpass):
     Tsys_norm = np.full(np.shape(Tsys_sinspw), np.nan)
     isins = [isin_phase, isin_sci, isin_bpass]
 
-    for isin in isins:
+    for i, isin in enumerate(isins):
         if len(isin[0]) == 0:
             continue
         else:
-            Tsys_norm[isin] = Tsys_sinspw[isin] / Tsys_sinspw[isin[0][0]]
+            Tsys_norm[isin] = Tsys_sinspw[isin] / Tsys_sinspw[isin[0][normScans[i]]]
 
     return Tsys_norm
