@@ -2,6 +2,8 @@ def regrid_time(xdata, ydata, xtime, ytime,
                 interval=1.0):
     '''
     ------
+    Regrid the data from one time series to another. Not the that 
+    the orignal and targeted time series should not contain nan value.  
     paramters:
     xdata: np.ndarray.
         array of data to be synchronized to
