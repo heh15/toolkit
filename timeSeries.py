@@ -38,6 +38,42 @@ def regrid_time(xdata, ydata, xtime, ytime,
     return ydata_regridded
 
 
+def rebin_time(data, time, timebin=10):
+    '''
+    ------
+    Rebin the data by a certain interval of time. Note the input time
+    series should not contain nan value 
+    paramters:
+    data: np.1darray.
+        array of data to be binned
+    time: np.1darray
+        array of time the data is taken
+    timebin: float
+        The interval of time to bin the data. 
+    ------
+    retrun: 
+    data_binned: np.1darray
+        The rebinned data. 
+    time_sep: np.1darray
+        Rebinned time with interval equal to the timebin. 
+    '''
+    time_sep = np.arange(time[0], time[-1], timebin) + timebin/2
+    data_binned = np.full(np.shape(time_sep), np.nan)
+
+    # following code are similar as that in regrid_time()
+    dist = np.abs(time[:, np.newaxis] - time_sep)
+    potentialClosest = np.nanargmin(dist, axis=1)
+    diff = np.nanmin(dist, axis=1)
+    # leave out the time with spacing greater than the interval of original time.
+    data[np.where(diff > timebin)] = np.nan
+    closestFound, closestCounts = np.unique(potentialClosest, return_counts=True)
+    data_group = np.split(data, np.cumsum(closestCounts)[:-1])
+    for i, index in enumerate(closestFound):
+        data_binned[index] = np.nanmean(data_group[i])
+
+    return data_binned, time_sep
+
+
 def smooth_data(data, time, timebin=30):
     '''
     Smooth the data by every certain length of time. Note the length of smoothed data
