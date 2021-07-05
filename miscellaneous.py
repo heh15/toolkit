@@ -27,5 +27,20 @@ def round_sig(x, sig=2):
     '''
     return round(x, sig-int(floor(log10(abs(x))))-1)
 
-
-
+# fit the Gaussian function
+def gaus(x,a,x0,sigma):
+    '''
+    Fit the gaussian spectrum
+    ------
+    Parameters
+    x: 1D array
+    Data of x axis for the Gaussian fitting
+    a, x0, sigma: float
+    Parameters for th function. 
+    ------
+    Examples:
+    from scipy.optimize import curve_fit
+    curve_fit(gaus, x, y, p0=[maximum, mean, sigma])
+    sns. 
+    '''
+    return a*np.exp(-(x-x0)**2/(2*sigma**2))
