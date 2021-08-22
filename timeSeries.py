@@ -38,7 +38,7 @@ def regrid_time(xdata, ydata, xtime, ytime,
     return ydata_regridded
 
 
-def rebin_time(data, time, timebin=10):
+def rebin_time(data, time, timebin=10, method='mean'):
     '''
     ------
     Rebin the data by a certain interval of time. Note the input time
@@ -49,7 +49,14 @@ def rebin_time(data, time, timebin=10):
     time: np.1darray
         array of time the data is taken
     timebin: float
-        The interval of time to bin the data. 
+        The interval of time to bin the data.
+    method: str
+        Options for all the data values are binned. The options are:
+        'mean'
+            Calculate the mean of the data at each binned interval
+        'counts"
+            Get the data that happens most frequently at each binned
+            interval. 
     ------
     retrun: 
     data_binned: np.1darray
@@ -68,8 +75,14 @@ def rebin_time(data, time, timebin=10):
     data[np.where(diff > timebin)] = np.nan
     closestFound, closestCounts = np.unique(potentialClosest, return_counts=True)
     data_group = np.split(data, np.cumsum(closestCounts)[:-1])
-    for i, index in enumerate(closestFound):
-        data_binned[index] = np.nanmean(data_group[i])
+    if method == 'mean':
+        for i, index in enumerate(closestFound):
+            data_binned[index] = np.nanmean(data_group[i])
+    if method = 'counts':
+        for i, index in enumerate(closestFound):
+            value, counts = np.unique(data_group[i], return_counts=True)
+            ind = np.nanargmax(counts)
+            data_binned[index] = value[ind]
 
     return data_binned, time_sep
 
