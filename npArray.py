@@ -1,21 +1,33 @@
-def find_nearest(array, values):
+def find_nearest(array, values, full=False):
     '''
     Find the index of the values in the array closest to the given value
     ------
     Parameters:
     array: numpy.ndarray
         numpy array to be matched
-    values: numpy.ndarray or float64
+    values: numpy.ndarray or float
         values to be matched with numpy array
+    full: bool, optional
+        Switch determining the nature of return values. When it is False
+        (default) just the index returned. When True, the difference 
+        between matched array and given values are also returned
     ------
     Return:
-    idx: int
+    idx: int or int numpy array
         index of the closest value in array.
+    diff: float or float numpy array
+        Present only if `full`=True. Absolute difference between the 
+        given values and matched values in the array. 
     '''
     array = np.asarray(array)
-    idx = np.nanargmin((np.abs(array[:,np.newaxis] - values)), axis=0)
+    dist = np.abs(array[:,np.newaxis] - values)
+    idx = np.nanargmin(dist, axis=0)
+    diff = np.nanmin(dist, axis=0)
 
-    return idx
+    if full:
+        return idx, diff
+    else:
+        return idx
 
 def array_isin(element, test_elements):
     '''
