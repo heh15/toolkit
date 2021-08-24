@@ -51,4 +51,36 @@ def array_isin(element, test_elements):
     return isin
 
 
+def assign_matched_values(array, values, array_id, values_id):
+    '''
+    Assign the array with an array of values where the corresondning
+    identities of the array is equal to the identities of the values. 
+    ------
+    Parameters
+    array: np.ndarray
+        Input array to be given values
+    values: np.ndarray
+        Array of values that is to be given to the input array. 
+    array_id: np.ndarray
+        Array of identities corresponding to the input array. The 
+        shape of `array_id` should be the same as `array`. 
+    values_id: np.ndarray
+        Array of identties corresonding to the assigned values. The
+        shape of `values_id` should be the same as `values`. 
+    ------
+    Return
+    array_out: np.ndarray
+        The array with values assigned. 
+    '''
+    array_out = np.copy(array)
+    
+    dist = np.abs(values_id[:,np.newaxis] - array_id) 
+    idx = np.nanargmin(dist, axis=0)
+    diff = np.nanmin(dist, axis=0)
 
+    idx_matched = np.where(diff==0)
+    if len(idx_matched) > 0:
+        array_out[idx_matched] = values[idx[idx_matched]]  
+
+    return array_out
+    
