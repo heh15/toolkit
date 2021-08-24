@@ -50,7 +50,6 @@ def array_isin(element, test_elements):
 
     return isin
 
-
 def assign_matched_values(array, values, array_id, values_id):
     '''
     Assign the array with an array of values where the corresondning
@@ -83,4 +82,27 @@ def assign_matched_values(array, values, array_id, values_id):
         array_out[idx_matched] = values[idx[idx_matched]]  
 
     return array_out
-    
+
+def map_series_by_dict(a, d):
+    '''
+    Used for substituting each value in the array with another value
+    derived from the dictionary (substitute key with corresonding 
+    value. It is the same as `pandas.Series.map(dict)` function. 
+    ------
+    Parameters
+    a: np.ndarray
+        Numpy array with values to be substituted
+    d: dict
+        The dictionary corresponding each element in the array with
+        values used to substitute. 
+    ------
+    out_ar: np.ndarray
+        The array with substitute values. 
+    '''
+    v = np.array(list(d.values()))
+    k = np.array(list(d.keys()))
+    sidx = k.argsort()
+    out_ar = v[sidx[np.searchsorted(k,a,sorter=sidx)]]
+
+    return out_ar
+
