@@ -210,3 +210,77 @@ def reproj_binning2(data, wcs_in, bin_num, centerCoord = '', shape_out=''):
 
     
     return wcs_out, data_binned
+
+def make_mom0(dataCubes, pixsize=100, value=1e10):
+    '''
+    ------
+    Parameters
+    dataCubes: 3d numpy array
+        3D numpy array to make moment maps
+    pixsize: float
+        Size of each pixel in pc
+    value: float
+        pixel unit in solar mass
+    '''
+    mom0 = np.nansum(dataCubes, axis=2) * value / pixsize**2
+    
+    return mom0
+    
+def make_mom1(dataCubes, vel_1d):
+    '''
+    ------
+    Parameters 
+    dataCubes: 3d numpy array
+        3D numpy array to make moment maps
+    vel_1d: 1d numpy array
+        1D array of velocity values corresponding to the 3rd
+        axis of the dataCubes. 
+    '''          
+    vel_3d = np.full(np.shape(dataCubes),fill_value=np.nan)
+    vel_3d[:] = vel_1d
+    mom1 = np.nansum(vel_3d*dataCubes,axis=2) / np.nansum(dataCubes,axis=2)
+              
+    return mom1
+
+def make_mom2(dataCubes, vel_1d):
+    '''
+    ------
+    Parameters
+    dataCubes: 3d numpy array
+        3D numpy array to make moment maps
+    vel_1d: 1d numpy array
+        1D array of velocity values corresponding to the 3rd
+        axis of the dataCubes.
+    '''
+    vel_3d = np.full(np.shape(dataCubes),fill_value=np.nan)
+    vel_3d[:] = vel_1d
+    mom1 = np.nansum(vel_3d*dataCubes,axis=2) / np.nansum(dataCubes,axis=2)
+    
+    mom1_3d = np.repeat(mom1[:,:,np.newaxis], len(vel_1d), axis=2)
+    vel_diff = vel_3d - mom1_3d
+    mom2 = np.sqrt(np.nansum(vel_diff**2*dataCubes,axis=2) / np.nansum(dataCubes,axis=2))
+    
+    return mom2
+
+def make_Tpeak(dataCubes, pixsize=100, value=1e10, alphaCO=4.3, ratio=0.7, deltaV=2):
+    '''
+    ------
+    Parameters
+    dataCubes: 3d numpy array
+        3D numpy array to make moment maps
+    pixsize: float
+        Size of each pixel in pc
+    value: float
+        pixel unit in solarmass
+    alphaCO: float
+        CO-H2 conversion factor
+    ratio: float
+        CO 2-1/1-0 ratio
+    deltaV : float
+        Velocity resolution per channel
+    '''
+    mom8 = np.nanmax(dataCubes, axis=2)*value/pixsize**2
+    Tpeak = mom8 / alphaCO / deltaV * ratio
+    Tpeak[np.where(np.isnan(Tpeak))] = 0
+    
+    return Tpeak
