@@ -284,3 +284,25 @@ def make_Tpeak(dataCubes, pixsize=100, value=1e10, alphaCO=4.3, ratio=0.7, delta
     Tpeak[np.where(np.isnan(Tpeak))] = 0
     
     return Tpeak
+
+def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1)):
+    '''
+    Add the beam to the image
+    -----
+    Parameters:
+    ax: matplotlib.axes
+        Axes to be ploted
+    wcs: astropy.wcs
+        World Coordinate System for the image
+    beam: radio-beam.Beam
+        Beam object
+    xy_axis: coordinate relative to xy axis
+    '''
+    axis_to_data = ax.transAxes + ax.transData.inverted()
+    xcen_pix, ycen_pix = axis_to_data.transform(xy_axis)
+    pixscale = np.sqrt(np.sum(wcs.wcs.cdelt**2))*u.deg
+    ellipse_artist = beam.ellipse_to_plot(xcen_pix, ycen_pix, pixscale)
+    _ = ax.add_artist(ellipse_artist)
+
+    return
+
