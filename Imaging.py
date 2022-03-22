@@ -74,7 +74,6 @@ def Apmask_convert(aperture,data_cut):
 
     return ap_masked
 
-# convert region to the mask. 
 def Regmask2mask(aperture,data):
     '''
     Convert the region pixel aperture to python mask
@@ -90,10 +89,10 @@ def Regmask2mask(aperture,data):
         Array with pixels outside the region masked
     '''
     apmask=aperture.to_mask()
-    shape=data_cut.shape
+    shape=data.shape
     mask=apmask.to_image(shape=((shape[0],shape[1])))
     ap_mask=mask==0
-    ap_masked=np.ma.masked_where(ap_mask)
+    ap_masked=np.ma.masked_where(ap_mask, data)
 
     return ap_masked
 
@@ -298,7 +297,7 @@ def make_Tpeak(dataCubes, pixsize=100, value=1e10, alphaCO=4.3, ratio=0.7, delta
     
     return Tpeak
 
-def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1)):
+def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1), color='white'):
     '''
     Add the beam to the image
     -----
@@ -309,12 +308,16 @@ def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1)):
         World Coordinate System for the image
     beam: radio-beam.Beam
         Beam object
-    xy_axis: coordinate relative to xy axis
+    xy_axis: tuple
+        coordinate relative to xy axis
+    color: str
+        Color of the aperture
     '''
     axis_to_data = ax.transAxes + ax.transData.inverted()
     xcen_pix, ycen_pix = axis_to_data.transform(xy_axis)
     pixscale = np.sqrt(np.sum(wcs.wcs.cdelt**2))*u.deg
     ellipse_artist = beam.ellipse_to_plot(xcen_pix, ycen_pix, pixscale)
+    ellipse_artist.set_color(color)
     _ = ax.add_artist(ellipse_artist)
 
     return
