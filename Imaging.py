@@ -75,12 +75,25 @@ def Apmask_convert(aperture,data_cut):
     return ap_masked
 
 # convert region to the mask. 
-def Regmask_convert(aperture,data_cut):
+def Regmask2mask(aperture,data):
+    '''
+    Convert the region pixel aperture to python mask
+    ------
+    Parameters
+    aperture: 
+        region aperture in pixel coordinates
+    data: 2d numpy array
+        Data to be imaged 
+    ------
+    Return
+    ap_masked: numpy masked array
+        Array with pixels outside the region masked
+    '''
     apmask=aperture.to_mask()
     shape=data_cut.shape
     mask=apmask.to_image(shape=((shape[0],shape[1])))
     ap_mask=mask==0
-    ap_masked=np.ma.masked_where(ap_mask,data_cut)
+    ap_masked=np.ma.masked_where(ap_mask)
 
     return ap_masked
 
