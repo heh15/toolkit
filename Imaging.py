@@ -74,25 +74,13 @@ def Apmask_convert(aperture,data_cut):
 
     return ap_masked
 
-def Regmask2mask(aperture,data):
-    '''
-    Convert the region pixel aperture to python mask
-    ------
-    Parameters
-    aperture: 
-        region aperture in pixel coordinates
-    data: 2d numpy array
-        Data to be imaged 
-    ------
-    Return
-    ap_masked: numpy masked array
-        Array with pixels outside the region masked
-    '''
+# convert region to the mask. 
+def Regmask_convert(aperture,data_cut):
     apmask=aperture.to_mask()
-    shape=data.shape
+    shape=data_cut.shape
     mask=apmask.to_image(shape=((shape[0],shape[1])))
     ap_mask=mask==0
-    ap_masked=np.ma.masked_where(ap_mask, data)
+    ap_masked=np.ma.masked_where(ap_mask,data_cut)
 
     return ap_masked
 
@@ -308,10 +296,7 @@ def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1), color='white'):
         World Coordinate System for the image
     beam: radio-beam.Beam
         Beam object
-    xy_axis: tuple
-        coordinate relative to xy axis
-    color: str
-        Color of the aperture
+    xy_axis: coordinate relative to xy axis
     '''
     axis_to_data = ax.transAxes + ax.transData.inverted()
     xcen_pix, ycen_pix = axis_to_data.transform(xy_axis)
