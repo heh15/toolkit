@@ -42,7 +42,6 @@ def fits_import(fitsimage, item=0):
     wcs = WCS(hdr).celestial
     data=fits.open(fitsimage)[item].data
     data=np.squeeze(data)
-    data_masked=np.ma.masked_invalid(data)
 
     return wcs, data_masked
 
