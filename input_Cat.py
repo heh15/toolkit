@@ -60,6 +60,32 @@ def Coords_cal(dataFrame):
 
     return dataFrame
 
+def Coords_str2deg(RA, Dec):
+    '''
+    Convert the coordinates from strings of 'hh:mm:ss' and
+    'dd:mm:ss' to value of degrees
+    ------
+    Parameters:
+    RA: pd.Series
+        Series of strings for RA coordinates
+    Dec: pd.Series
+        Series of strings for declination 
+    ------
+    Return
+    RA_deg, Dec_deg: pd.Series
+        Series of RA and Dec values in degree. 
+    '''
+    RA_split = RA.str.split(pat=':', expand=True)
+    Dec_split = Decls.str.split(pat=':', expand=True)
+    for i in range(3):
+        RA_split[i] = RA_split[i].astype(float)
+        Dec_split[i] = Dec_split[i].astype(float)
+    RA_deg = 15*(RA_split[0]+RA_split[1]/60+RA_split[2]/3600)
+    Dec_deg = Dec_split[0]/np.abs(Dec_split[0])\
+                * (np.abs(Dec_split[0])+Dec_split[1]/60\
+                        +Dec_split[2]/3600)
+
+    return RA_deg, Dec_deg
 
 def match_coords_cart(coords1, coords2):
     '''
