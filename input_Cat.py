@@ -107,3 +107,47 @@ def match_coords_cart(coords1, coords2):
     coords2_matched = np.nanargmin(dist, axis=1)
 
     return coords2_matched
+
+def Coordinate_match_fixedRadius(df1, df2, columns, radius=40, RA1col='RA', Dec1col='Dec',
+                    RA2col='RA', Dec2col='Dec', mode='closest'):
+
+    '''
+    Match the coordinates in df1 and df2 and select the certain column in df2 to df1. An example
+    is to match the two catalogus from ALMA archival search.
+    ------
+    Parameters
+    df1: pandas DataFrame
+        Catalog of sources to be matched
+    df2: pandas DataFrame
+        Second catalog of sources to match the first catalog
+    columns: list
+        List of column names to be extracted from second catalog
+    radius: float
+        Radius of the circle within which sources are considered
+        to be matched. The value is in arcsec.
+    RA1col, Dec1col: str
+        Name of right asscention and declination column for the first
+        catalog
+    RA2col, Dec2col: str
+        Name of right asscention and declination column for the second
+        catalog
+    mode: str
+        Method to pick the value  if more than one item in second catalog
+        are matched. The methods are:
+        "closest": select the object with closest offset
+        "first": select the object that first appears in the second catalog.
+    '''
+    df3 = pd.DataFrame(columns = columns, index = df1.index)
+    for i in df1.index:
+        Coord1 = SkyCoord(df1.loc[i, RA1col]*u.degree, df1.loc[i, Dec1col]*u.degree)
+        Coords2 = SkyCoord(df2[RA2col]*u.degree, df2[Dec2col]*u.degree)
+        indexes = np.where(Coords2.separation(Coord1) < radius*u.arcsec)[0]
+        if len(indexes) >0:
+            if mode == 'closest':
+                index = np.argmin(Coords2.separation(Coord1))
+                df3.loc[i] = df2.loc[index, columns]
+            elif mode == 'first':
+                df3.loc[i] = df2.loc[indexes[0], columns]
+    df1_matched = pd.concat([df1, df3], axis=1)
+
+    return df1_matched
