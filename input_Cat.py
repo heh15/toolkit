@@ -151,3 +151,50 @@ def Coordinate_match_fixedRadius(df1, df2, columns, radius=40, RA1col='RA', Dec1
     df1_matched = pd.concat([df1, df3], axis=1)
 
     return df1_matched
+
+def Coordinate_match_closest(df1, df2, coords1, coords2, columns, newColumns=[], full=False):
+    '''
+    Match the closest coordinate from coords2 to that of coords1 for the closest target. An example
+    of this function is to match the star cluster with its closest GMCs. 
+    ------
+    Parameters:
+    df1: pd.DataFrame
+        Pandas data frame that contains information for sources to be matched
+    df2: pd.DataFrame
+        Pandas data frame that contains information to match the first catalog
+    coords1: photutils.SkyCoord
+        Sky coordinates for first catalog
+    coords2: photutils.SkyCoord
+        Sky coordinates for second catalog
+    columns: list
+        List of columns that are extracted from the second catalog
+    newColumns: list
+        List of column names that contains information extracted from second 
+        catalog. 
+    full: bool
+        If false, only returns two extracted dataframes. If false, also return
+        output from 'SkyCoord.match_to_catalog_sky()' function. 
+    ------
+    Return:
+    df1_matched:
+        Data frame that contains first catalog and matched information from 
+        second catalog. 
+    df2_matched:
+        Data frame that extracted from the second catalog to match the first 
+        catalog. 
+    idx, d2d, d3d: np.array
+        Output from SkyCoord.match_to_catalog_sky() function respresenting indexes,
+        2d offsets and 3d offsets. 
+    '''
+    idx, d2d, d3d = coords1.match_to_catalog_sky(coords2)
+    df2_toMatch = df2.loc[idx].reset_index()
+    df1_matched = df1.copy(deep=True)
+    if len(newColumns)== 0:
+        newColumns = columns
+    for i, newColumn in enumerate(newColumns):
+        df1_matched[newColumn] = df2_toMatch[columns[i]]    
+        
+    if full == False:
+        return df1_matched, df2_toMatch
+    else:
+        return df1_matched, df2_toMatch, idx, d2d, d3d
