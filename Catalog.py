@@ -159,7 +159,8 @@ def Coordinate_match_closest(df1, df2, coords1, coords2, columns, newColumns=[],
     ------
     Parameters:
     df1: pd.DataFrame
-        Pandas data frame that contains information for sources to be matched
+        Pandas data frame that contains information for sources to be matched. Note the index of 
+        the first data frame should be reset with "reset_index()" function to start from 0
     df2: pd.DataFrame
         Pandas data frame that contains information to match the first catalog
     coords1: photutils.SkyCoord
