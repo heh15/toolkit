@@ -185,7 +185,7 @@ def normalize_Tsys(Tsys_sinspw, isin_phase, isin_sci, isin_bpass, normScans=[0,0
     return Tsys_norm
 
 def approxCalcPWV(tsrc0,tsrc1,tsrc2,tsrc3,m_el,Tamb=275,r=[1.193,0.399,0.176,0.115],
-               tau0=[0.027,0.02,0.01,0.01],eta_c=0.97,verb=True):
+        tau0=[0.027,0.02,0.01,0.01],eta_c=0.97,verb=True,full=False):
     '''
     Calculate the pwv values from the Twvr from 4 channels
     ------
@@ -204,10 +204,14 @@ def approxCalcPWV(tsrc0,tsrc1,tsrc2,tsrc3,m_el,Tamb=275,r=[1.193,0.399,0.176,0.1
         The forward efficiency of the antenna
     verb: bool
         If true, print out bunch of information
+    full: bool
+        If False, only returns the final corrected pwv values
     ------
     Return
     pwv_z:
         Zenith pwv values
+    pwv_z_noc,tau_constant_z,rat31_1,rat31_2:
+        pwv_z_noc is uncorrected PWV values before taking wet clouds into consideration
     '''
     m_el=m_el/57.295   # convert to radians
     T_loss=275.0
@@ -303,4 +307,4 @@ def approxCalcPWV(tsrc0,tsrc1,tsrc2,tsrc3,m_el,Tamb=275,r=[1.193,0.399,0.176,0.1
     pwv_z_noc=pwv_los_noc*math.sin(m_el)
     tau_constant_z=tau_constant      # *math.sin(m_el)   ##!! assume tau_constant is not planar - just the line of sign value (ie don't use sin(elev) )
 
-    return pwv_z
+    return pwv_z,pwv_z_noc,tau_constant_z,rat31_1,rat31_2
