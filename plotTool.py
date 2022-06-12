@@ -185,3 +185,47 @@ def add_label_band(ax, left, right, label, *, spine_pos=-0.12, tip_pos=-0.09, fo
     )
 
     return bracket, txt
+
+def add_scalebar(ax, wcs, length, xy_axis=(0.1,0.8), color='w', linestyle='-', label='',
+                 fontsize=12, text_offset=0.1*u.arcsec):
+    '''
+    Add scale bar to the image, code modified from https://github.com/astropy/astropy-tutorials/issues/443.
+    ------
+    Parameters:
+    ax: matplotlib.axes
+        Axes to be plotted on
+    wcs: astropy.wcs
+        World coordinate system for the image
+    length: astropy.Quantity (with units)
+        Quantity of length of the scale bar
+    xy_axis: tuple
+        Coordinate relative to the xy axis
+    color: str
+        Color for the scale bar
+    linestyle, label, fontsize:
+        Parameters for plt.plot
+    text_offset: astropy.Quantity
+        Text vertical offset from the bar
+    ------
+    Returns:
+    lines,txt:
+        Line and text object.
+    '''
+    axis_to_data = ax.transAxes + ax.transData.inverted()
+    left_side_pix = axis_to_data.transform(xy_axis)
+    left_side = wcs.pixel_to_world(left_side_pix[0],left_side_pix[1])
+    lines = ax.plot(u.Quantity([left_side.ra, left_side.ra-length]),
+                    u.Quantity([left_side.dec]*2),
+                    color=color, linestyle=linestyle, marker=None,
+                    transform=ax.get_transform('fk5'),
+                   )
+    txt = ax.text((left_side.ra-length/2).to(u.deg).value,
+                  (left_side.dec+text_offset).to(u.deg).value,
+                  label,
+                  verticalalignment='bottom',
+                  horizontalalignment='center',
+                  transform=ax.get_transform('fk5'),
+                  color=color,
+                  fontsize=fontsize,
+                 )
+    return lines,txt
