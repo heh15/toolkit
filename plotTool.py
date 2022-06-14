@@ -229,3 +229,25 @@ def add_scalebar(ax, wcs, length, xy_axis=(0.1,0.8), color='w', linestyle='-', l
                   fontsize=fontsize,
                  )
     return lines,txt
+
+def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1), color='white'):
+    '''
+    Add the beam to the image
+    -----
+    Parameters:
+    ax: matplotlib.axes
+        Axes to be ploted
+    wcs: astropy.wcs
+        World Coordinate System for the image
+    beam: radio-beam.Beam
+        Beam object
+    xy_axis: coordinate relative to xy axis
+    '''
+    axis_to_data = ax.transAxes + ax.transData.inverted()
+    xcen_pix, ycen_pix = axis_to_data.transform(xy_axis)
+    pixscale = np.sqrt(np.sum(wcs.wcs.cdelt**2))*u.deg
+    ellipse_artist = beam.ellipse_to_plot(xcen_pix, ycen_pix, pixscale)
+    ellipse_artist.set_color(color)
+    _ = ax.add_artist(ellipse_artist)
+
+    return
