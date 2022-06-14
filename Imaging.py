@@ -306,3 +306,54 @@ def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1), color='white'):
 
     return
 
+def reproject_north(data,wcs):
+    '''
+    Parameters
+    ----------
+    data : np.2darray
+        Data of the image
+    wcs : wcs
+        WCS information of the image
+
+    Returns
+    -------
+    wcs_north : wcs
+        Output wcs point to the north
+    data_north : np.2darray
+        Reprojected data
+
+    '''
+    wcs_north = WCS(naxis=2)
+    wcs_north.wcs.crval = wcs.wcs.crval
+    wcs_north.wcs.crpix = wcs.wcs.crpix
+    cd = wcs.wcs.cd
+    wcs_north.wcs.cd = np.sqrt(cd[0,0]**2+cd[1,0]**2)*np.array([[-1,0],[0,1]])
+    wcs_north.wcs.ctype = ['RA---SIN', 'DEC--SIN']
+    start = time.time()
+    data_north, footprint = reproject_exact((data, wcs), wcs_north, 
+                                            shape_out=np.shape(data))
+    
+    return wcs_north, data_north
+    
+def output_fits(fitsimage, data, wcs):
+    '''
+    Parameters
+    ----------
+    fitsimage : str
+        Filename of the fits image
+    data : np.2darray
+        Data of the image
+    wcs : wcs
+        wcs information
+
+    Returns
+    -------
+    None.
+
+    '''
+    header = wcs.to_header()
+    hdu = fits.PrimaryHDU(data, header)
+    hdu.writeto(fitsimage, overwrite=True)
+    
+    return
+
