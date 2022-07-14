@@ -1,3 +1,7 @@
+from reproject import reproject_interp
+from astropy.wcs.utils import pixel_to_skycoord
+from astropy.coordinates import match_coordinates_sky
+
 def read_ascii(filename, columns, colnumber, skiprows=0):
     '''
     Read the ascii table with fixed column width
