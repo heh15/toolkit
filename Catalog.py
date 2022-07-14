@@ -199,3 +199,41 @@ def Coordinate_match_closest(df1, df2, coords1, coords2, columns, newColumns=[],
         return df1_matched, df2_toMatch
     else:
         return df1_matched, df2_toMatch, idx, d2d, d3d
+
+def labelForStacking(coords_in,wcs,data):
+    '''
+    Give the label for a catalog of objects that belongs to each pixel
+    ------
+    Parameters:
+    coords_in: SkyCoord object
+        List of sky coordinates.
+    wcs: WCS
+        WCS object of the data
+    data: np.2darray
+        Numpy array of data.
+    ------
+    Return:
+    matched_idx: np.mask
+        Numpy mask array to determine if the object belongs to a certain pixel
+    coords_label: np.1darray
+        Numpy array of labels coorresponding to the pixel number for each object in
+        the catalog. 
+    '''
+    deltax, deltay = np.abs(wcs.wcs.cdelt) * 3600
+    nx, ny = np.shape(data)
+    xs, ys = np.meshgrid(np.arange(nx), np.arange(ny))
+    coords_pix = pixel_to_skycoord(xs, ys, wcs)
+    pixel_labels_out = (np.arange(xs.size)).astype(int)
+    
+    idx, d2d, d3ds = coords_in.match_to_catalog_sky(coords_pix.flatten())
+    dra, ddec = coords_in.spherical_offsets_to(
+        coords_pix.flatten()[idx])
+    dra = dra.arcsec
+    ddec = ddec.arcsec
+    good = (-deltax/2 <= dra) & (dra < deltax/2) & (-deltay/2 <= ddec) & (ddec < deltay/2)
+    coords_labels = np.full(np.shape(coords_in),np.nan)
+
+    coords_labels[good] = pixel_labels_out[idx[good]]
+    matched_idx = good
+    
+    return matched_idx, coords_label
