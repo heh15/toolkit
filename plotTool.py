@@ -251,3 +251,25 @@ def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1), color='white'):
     _ = ax.add_artist(ellipse_artist)
 
     return
+
+def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+    '''
+    Truncate the colormap in matplotlib, modified from 
+    https://stackoverflow.com/questions/18926031/how-to-extract-a-subset-of-a-colormap-as-a-new-colormap-in-matplotlib
+    ------
+    Parameters:
+    cmap: 
+        Python color maps
+        > cmap = plt.get_cmap('jet')
+    minval, maxval: float
+    n: int
+    ------
+    Return:
+    newcmap: 
+        truncated color map
+    '''
+    new_cmap = colors.LinearSegmentedColormap.from_list(
+        'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+        cmap(np.linspace(minval, maxval, n)))
+    return new_cmap
+
