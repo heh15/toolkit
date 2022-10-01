@@ -222,7 +222,7 @@ def add_scalebar(ax, wcs, length, xy_axis=(0.1,0.8), color='w', linestyle='-', l
     txt = ax.text((left_side.ra-length/2).to(u.deg).value,
                   (left_side.dec+text_offset).to(u.deg).value,
                   label,
-                  verticalalignment='bottom',
+                  verticalalignment='top',
                   horizontalalignment='center',
                   transform=ax.get_transform('fk5'),
                   color=color,
