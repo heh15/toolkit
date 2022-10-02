@@ -32,12 +32,19 @@ import math
 import shutil
 import pandas as pd
 
-############################################################
-# function
+###########################################################
+# I/O of data
 
-# import and cut the file
-# Nov 16th,2018. If the data is not in the first item of the header, try importfits and exportfits to convert image. 
 def fits_import(fitsimage, item=0):
+    '''
+    Import the fits image data.
+    ------
+    Parameters:
+    fitsimage: string
+        Path to the fits image.
+    item:
+        index number in fits hdu file that contains actual data
+    '''
     hdr = fits.open(fitsimage)[item].header
     wcs = WCS(hdr).celestial
     data=fits.open(fitsimage)[item].data
@@ -45,68 +52,134 @@ def fits_import(fitsimage, item=0):
 
     return wcs, data_masked
 
-# example position and size format. 
-def cut_2d(data_masked,position,size,wcs):
-    cut=Cutout2D(data=data_masked,position=position,size=size,wcs=wcs)
+def output_fits(fitsimage, data, wcs):
+    '''
+    Parameters
+    ----------
+    fitsimage : str
+        Filename of the fits image
+    data : np.2darray
+        Data of the image
+    wcs : wcs
+        wcs information
+
+    Returns
+    -------
+    None.
+
+    '''
+    header = wcs.to_header()
+    hdu = fits.PrimaryHDU(data, header)
+    hdu.writeto(fitsimage, overwrite=True)
+    
+    return
+
+###########################################################
+# Select data
+
+def cut_2d(data, position, size, wcs):
+    '''
+    Cut the image into given rectangle
+    ------
+    Parameters:
+    data: np.2darray
+        Image data. 
+    position: sky coordinates
+        Given by "SkyCoord(ra=ra,dec=dec,frame='fk5'"
+    size: 2d quantity
+        Given by "u.Quantity((x,y), u.arcsec)"
+    wcs: 
+        wcs information for the data
+    ------
+    Return:
+    wcs_cut: 
+        wcs information for the cut data
+    data_cut:
+    '''
+    cut=Cutout2D(data=data,position=position,size=size,wcs=wcs)
     data_cut=cut.data
     wcs_cut=cut.wcs
 
     return wcs_cut, data_cut
 
-# draw rings of apertures with give list of radiuses.
+
 def aperture_rings(a_in,a_out,wcs,cosi,pa):
+    '''
+    Generate a list of pixel aperture rings
+    '''
     ring_sky=SkyEllipticalAnnulus(positions=center,a_in=a_in*u.arcsec,a_out=a_out*u.arcsec,b_out=a_out*cosi*u.arcsec,theta=pa*u.degree)
     ring_pix=ring_sky.to_pixel(wcs=wcs)
     return ring_pix
 
-for i in range(1,size): # for multiple rings. 
-    rings[i]=aperture_rings(radius_arc[i-1],radius_arc[i],wcs,cosis[i],pas[i])
-    rings_mask[i]=Apmask_convert(rings[i],mom2_model)
 
-# convert aperture to the mask
-def Apmask_convert(aperture,data_cut):
-    apmask=aperture.to_mask(method='center')
-    shape=data_cut.shape
+def Apmask_convert(aperture_pix,data):
+    '''
+    Convert photutils.apeture_pix into numpy masked array
+    ------
+    Parameters:
+    aperture_pix: photutils.aperture_pix
+        Can be converted from skyaperture using "aperture_sky.to_pixel(wcs)". 
+    data: np.2darray
+    ------
+    Returns:
+        data_region: numpy masked array, values in region are masked  
+    '''
+    apmask=aperture_pix.to_mask(method='center')
+    shape=data.shape
     mask=apmask.to_image(shape=((shape[0],shape[1])))
     ap_mask=mask==0
-    ap_masked=np.ma.masked_where(ap_mask,data_cut)
+    data_region = np.ma.masked_where(ap_mask,data)
 
-    return ap_masked
+    return data_region
 
-# convert region to the mask. 
-def Regmask_convert(aperture,data_cut):
-    apmask=aperture.to_mask()
-    shape=data_cut.shape
+def Regmask_convert(region_pix,data):
+    '''
+    Convert region_ds9.region_pix into numpy masked array
+    ------
+    Parameters:
+    region_pix: region_ds9.region_pix
+        Can be converted from imported ds9 region using "region_sky.to_pixel(wcs)".
+    data: np.2darray
+    ------
+    Returns: 
+    data_region: numpy masked array, values in region are masked. 
+    '''
+    apmask = region_pix.to_mask()
+    shape = data.shape
     mask=apmask.to_image(shape=((shape[0],shape[1])))
     ap_mask=mask==0
-    ap_masked=np.ma.masked_where(ap_mask,data_cut)
+    ap_masked=np.ma.masked_where(ap_mask,data)
 
-    return ap_masked
+    return data_region
 
-# convert input .mask file to the python mask
-def masked_convert(data_masked,region_masked):
-    data_mask=data_masked.mask
+def casaMask_convert(data,region_masked):
+    '''
+    Convert the CASA .mask into numpy masked array
+    ------
+    Parameters:
+    data: np.2darray
+        2D image data
+    region_masked: np.2darray
+        2D array of 0 and 1 of the mask imported from .mask file using "fits_import()".  
+    ------
+    Returns: 
+    data_region: numpy masked array, values in region are masked. 
+    '''
+#     data_mask=data_masked.mask
     region_mask=np.ma.make_mask(region_masked==0)
-    region_mask=np.ma.mask_or(data_mask,region_mask)
+#     region_mask=np.ma.mask_or(data_mask,region_mask)
     data_region=np.ma.masked_where(region_mask,data_masked)
     return data_region
 
-# cut the imported data cube.
-def cut_3d(data,position,size,wcs):
-    for i in range(data_3d.shape[0]):
-        cut=Cutout2D(data=data[i],position=position,size=size,wcs=wcs)
-        if i==0:
-            data_cut=cut.data
-        elif i==1:
-            data_cut=np.stack((data_cut,cut.data))
-        else:
-            temp=np.expand_dims(cut.data,axis=0)
-            data_cut=np.concatenate((data_cut,temp))
-    wcs_cut=cut.wcs
-    return data_cut, wcs_cut
 
-# flux of the region given by mask for radio image
 def flux_mask_get(data_region,rms,chans,chan_width):
+    '''
+    Measure a flux in a region defined by numpy mask.
+    ------
+    Parameters:
+    data_region: np.masked.data
+        numpy masked 2d array with values in regioon masked. 
+    '''
     flux=np.ma.sum(data_region)/beam_area_pix
     chans_tmp=chans+np.zeros((np.shape(data_region)[0],np.shape(data_region)[1]))
     error=np.sqrt(chans_tmp)*rms*chan_width/sqrt(beam_area_pix)
@@ -114,8 +187,10 @@ def flux_mask_get(data_region,rms,chans,chan_width):
     uncertainty=math.sqrt(np.ma.sum(np.power(error_masked,2)))
     return flux, uncertainty
 
-# flux of the region given by aperture for radio image
 def flux_aperture_get(data_masked,aperture,rms,chans,chan_width, beamarea_pix):
+    '''
+    Measure the flux in a region defined by photutils.aperture.
+    '''
     data_cut=data_masked.data
     mask=data_masked.mask
     if np.shape(chans) == ():
@@ -126,27 +201,13 @@ def flux_aperture_get(data_masked,aperture,rms,chans,chan_width, beamarea_pix):
 
     return flux, uncertainty
 
-# mask 3d cube with a region file in specified channels (June 28th)
-def Regmask3d(data,region_pix,lowchan,highchan):
-    region_masks=region_pix.to_mask()
-    if type(region_masks)==list:
-        region_mask=region_masks[0]
-    else:
-        region_mask=region_masks
-    shape=np.shape(data)
-    mask=region_mask.to_image(shape=((shape[1],shape[2])))
-    mask3d=np.zeros((shape[0],shape[1],shape[2]))
-    mask3d[lowchan:highchan]=mask
-    maskTF=mask3d==1
+###########################################################
+# change the data wcs information
 
-    data_masked=np.copy(data)
-    data_masked[maskTF]='nan'
-
-    return data_masked, maskTF
-
-## bin the image in certain wcs frame. 
 def reproj_binning(data, wcs, bin_num):
-    
+    '''
+    bin the image in certain wcs frame.
+    '''
     map_in_shape=np.shape(data)
     nx_in, ny_in=map_in_shape
     nx_out=math.trunc(nx_in/bin_num);ny_out=math.trunc(ny_in/bin_num)
@@ -209,6 +270,75 @@ def reproj_binning2(data, wcs_in, bin_num, centerCoord = '', shape_out=''):
 
     
     return wcs_out, data_binned
+
+def reproject_north(data,wcs):
+    '''
+    Parameters
+    ----------
+    data : np.2darray
+        Data of the image
+    wcs : wcs
+        WCS information of the image
+
+    Returns
+    -------
+    wcs_north : wcs
+        Output wcs point to the north
+    data_north : np.2darray
+        Reprojected data
+
+    '''
+    wcs_north = WCS(naxis=2)
+    wcs_north.wcs.crval = wcs.wcs.crval
+    wcs_north.wcs.crpix = wcs.wcs.crpix
+    cd = wcs.wcs.cd
+    wcs_north.wcs.cd = np.sqrt(cd[0,0]**2+cd[1,0]**2)*np.array([[-1,0],[0,1]])
+    wcs_north.wcs.ctype = ['RA---SIN', 'DEC--SIN']
+    start = time.time()
+    data_north, footprint = reproject_exact((data, wcs), wcs_north, 
+                                            shape_out=np.shape(data))
+    
+    return wcs_north, data_north
+
+###########################################################
+# Processing 3d data
+
+def cut_3d(data,position,size,wcs):
+    '''
+    Cut the data cubes with 2D rectangle
+    '''
+    for i in range(data_3d.shape[0]):
+        cut=Cutout2D(data=data[i],position=position,size=size,wcs=wcs)
+        if i==0:
+            data_cut=cut.data
+        elif i==1:
+            data_cut=np.stack((data_cut,cut.data))
+        else:
+            temp=np.expand_dims(cut.data,axis=0)
+            data_cut=np.concatenate((data_cut,temp))
+    wcs_cut=cut.wcs
+    return data_cut, wcs_cut
+
+# mask 3d cube with a region file in specified channels (June 28th)
+def Regmask3d(data,region_pix,lowchan,highchan):
+    '''
+
+    '''
+    region_masks=region_pix.to_mask()
+    if type(region_masks)==list:
+        region_mask=region_masks[0]
+    else:
+        region_mask=region_masks
+    shape=np.shape(data)
+    mask=region_mask.to_image(shape=((shape[1],shape[2])))
+    mask3d=np.zeros((shape[0],shape[1],shape[2]))
+    mask3d[lowchan:highchan]=mask
+    maskTF=mask3d==1
+
+    data_masked=np.copy(data)
+    data_masked[maskTF]='nan'
+
+    return data_masked, maskTF
 
 def make_mom0(dataCubes, pixsize=100, value=1e10):
     '''
@@ -285,54 +415,5 @@ def make_Tpeak(dataCubes, pixsize=100, value=1e10, alphaCO=4.3, ratio=0.7, delta
     return Tpeak
 
 
-def reproject_north(data,wcs):
-    '''
-    Parameters
-    ----------
-    data : np.2darray
-        Data of the image
-    wcs : wcs
-        WCS information of the image
-
-    Returns
-    -------
-    wcs_north : wcs
-        Output wcs point to the north
-    data_north : np.2darray
-        Reprojected data
-
-    '''
-    wcs_north = WCS(naxis=2)
-    wcs_north.wcs.crval = wcs.wcs.crval
-    wcs_north.wcs.crpix = wcs.wcs.crpix
-    cd = wcs.wcs.cd
-    wcs_north.wcs.cd = np.sqrt(cd[0,0]**2+cd[1,0]**2)*np.array([[-1,0],[0,1]])
-    wcs_north.wcs.ctype = ['RA---SIN', 'DEC--SIN']
-    start = time.time()
-    data_north, footprint = reproject_exact((data, wcs), wcs_north, 
-                                            shape_out=np.shape(data))
     
-    return wcs_north, data_north
-    
-def output_fits(fitsimage, data, wcs):
-    '''
-    Parameters
-    ----------
-    fitsimage : str
-        Filename of the fits image
-    data : np.2darray
-        Data of the image
-    wcs : wcs
-        wcs information
-
-    Returns
-    -------
-    None.
-
-    '''
-    header = wcs.to_header()
-    hdu = fits.PrimaryHDU(data, header)
-    hdu.writeto(fitsimage, overwrite=True)
-    
-    return
 
