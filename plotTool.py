@@ -273,3 +273,21 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
         cmap(np.linspace(minval, maxval, n)))
     return new_cmap
 
+def combine_colormap(colors1, colors2)
+    '''
+    Combine 2 color maps together
+    -------
+    Parameters:
+    colors1, colors2: numpy array 
+        Two colors that are going to be used
+        > colors1 = plt.cm.binary(np.linspace(0., 1, 128))
+        > colors2 = plt.cm.gist_heat(np.linspace(0, 1, 128))
+    ------
+    Returns:
+    mymap: 
+        The newly defined cmap
+    '''
+    colors_combined = np.vstack((colors1, colors2))
+    mymap = colors.LinearSegmentedColormap.from_list('my_colormap', colors_combined)
+
+    return mymap
