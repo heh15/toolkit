@@ -15,5 +15,5 @@ def fit_proportional(x, y):
         coefficient between x and y
     '''
     x = x[:,np.newaxis]
-    a,_,_,_ = np.linalg.lstsq()
+    a,_,_,_ = np.linalg.lstsq(x, y)
     return a
