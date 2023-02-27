@@ -112,6 +112,27 @@ def match_coords_cart(coords1, coords2):
 
     return coords2_matched
 
+def match_coords_skycart(coords1, coords2):
+    '''
+    Similar to "match_coords_cart" but using Skycoord to match
+    ------
+    Parameters:
+    coords1: Skycoord
+        List of 3d cartesian Skycoord coordinates to be matched. Can be created using following
+        commands. 
+        >>>coords1 = SkyCoord(x=x, y=y, z=z, representation_type='cartesian')
+    coords2: Skycoord 
+        List of 3d carteisan Skyccord to match coords1
+    ------
+    Return:
+    coords2_matched: np.ndarray
+        Array of coords2 that matched to coords1. 
+    '''
+    indexes, offsets_2d, offsets_3d = coords1.match_to_catalog_3d(coords2)
+    coords2_matched = coords2[indexes]
+
+    return coords_matched
+
 def Coordinate_match_fixedRadius(df1, df2, columns, radius=40, RA1col='RA', Dec1col='Dec',
                     RA2col='RA', Dec2col='Dec', mode='closest'):
 
