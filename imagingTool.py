@@ -50,7 +50,7 @@ def fits_import(fitsimage, item=0):
     data=fits.open(fitsimage)[item].data
     data=np.squeeze(data)
 
-    return wcs, data_masked
+    return wcs, data
 
 def output_fits(fitsimage, data, wcs):
     '''
@@ -170,6 +170,34 @@ def casaMask_convert(data,region_masked):
 #     region_mask=np.ma.mask_or(data_mask,region_mask)
     data_region=np.ma.masked_where(region_mask,data_masked)
     return data_region
+
+def Annulus_reg2phot(annulus_list):
+    '''
+    Convert the sky annlus in Regions class to a list of 
+    sky apertures in photutils.aperture class
+    '''
+    annulus_list_out = [\
+                        SkyEllipticalAnnulus(positions=annulus.center,
+                                             a_in = annulus.inner_width/2,
+                                             a_out = annulus.outer_width/2,
+                                             b_in = annulus.inner_width/2,
+                                             b_out = annulus.outer_width/2,
+                                             theta = annulus.angle+math.pi/2*u.radian)\
+                                             for annulus in annulus_list]
+    return annulus_list_out
+
+def Ellipse_reg2phot(aperture_list):
+    '''
+    Convert the sky annlus in Regions class to a list of 
+    sky apertures in photutils.aperture class
+    '''
+    aperture_list_out = [\
+                        SkyEllipticalAperture(positions=aperture.center,
+                                             a = aperture.width/2,
+                                             b = aperture.height/2, 
+                                             theta = aperture.angle+math.pi/2*u.radian)\
+                                             for aperture in aperture_list]
+    return aperture_list_out
 
 
 def flux_mask_get(data_region,rms,chans,chan_width):
@@ -294,7 +322,6 @@ def reproject_north(data,wcs):
     cd = wcs.wcs.cd
     wcs_north.wcs.cd = np.sqrt(cd[0,0]**2+cd[1,0]**2)*np.array([[-1,0],[0,1]])
     wcs_north.wcs.ctype = ['RA---SIN', 'DEC--SIN']
-    start = time.time()
     data_north, footprint = reproject_exact((data, wcs), wcs_north, 
                                             shape_out=np.shape(data))
     
