@@ -32,6 +32,7 @@ def find_nearest(array, values, full=False):
 def array_isin(element, test_elements):
     '''
     Test if element in one array is in another array
+    Equivalent to `np.where(np.isin(elements, test_elements))[0]
     ------
     Parameters
     element: np.ndarray
