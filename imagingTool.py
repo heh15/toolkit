@@ -148,7 +148,7 @@ def Regmask_convert(region_pix,data):
     shape = data.shape
     mask=apmask.to_image(shape=((shape[0],shape[1])))
     ap_mask=mask==0
-    ap_masked=np.ma.masked_where(ap_mask,data)
+    data_region = np.ma.masked_where(ap_mask,data)
 
     return data_region
 
