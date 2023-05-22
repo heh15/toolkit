@@ -81,3 +81,18 @@ def calc_2pCorr_xi(RA, Dec, randRA, randDec, RA1, Dec1, randRA1, randDec1):
 
     return nn.logr, xi, varxi
 
+def pyvorCells_to_regionPix(cells):
+    '''
+    Convert the Voronoi tessellation object to a list of regionPix objects
+    ------
+    Parameters:
+    '''
+    regions_pix = []
+    for cell in cells:
+        vertices = np.array(cell['vertices'])
+        vertices_pix = PixCoord(x=vertices[:,0], y=vertices[:,1])
+        region_pix = PolygonPixelRegion(vertices=vertices_pix)
+        regions_pix.append(region_pix)
+    regions_pix = np.array(regions_pix)
+    
+    return regions_pix
