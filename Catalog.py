@@ -225,7 +225,7 @@ def Coordinate_match_closest(df1, df2, coords1, coords2, columns, newColumns=[],
     else:
         return df1_matched, df2_toMatch, idx, d2d, d3d
 
-def labelForStacking(coords_in,wcs,data):
+def group_catalog_to_pix(coords_in,wcs,data):
     '''
     Give the label for a catalog of objects that belongs to each pixel
     ------
@@ -245,7 +245,7 @@ def labelForStacking(coords_in,wcs,data):
         the catalog. 
     '''
     deltax, deltay = np.abs(wcs.wcs.cdelt) * 3600
-    nx, ny = np.shape(data)
+    ny, nx = np.shape(data)
     xs, ys = np.meshgrid(np.arange(nx), np.arange(ny))
     coords_pix = pixel_to_skycoord(xs, ys, wcs)
     pixel_labels_out = (np.arange(xs.size)).astype(int)
@@ -255,10 +255,10 @@ def labelForStacking(coords_in,wcs,data):
         coords_pix.flatten()[idx])
     dra = dra.arcsec
     ddec = ddec.arcsec
-    good = (-deltax/2 <= dra) & (dra < deltax/2) & (-deltay/2 <= ddec) & (ddec < deltay/2)
+    good = (-deltax/2-0.01 <= dra) & (dra < deltax/2+0.01) & (-deltay/2-0.01 <= ddec) & (ddec < deltay/2+0.01)
     coords_labels = np.full(np.shape(coords_in),np.nan)
 
     coords_labels[good] = pixel_labels_out[idx[good]]
     matched_idx = good
     
-    return matched_idx, coords_label
+    return matched_idx, coords_labels
