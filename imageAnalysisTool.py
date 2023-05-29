@@ -229,6 +229,61 @@ def flux_aperture_get(data_masked,aperture,rms,chans,chan_width, beamarea_pix):
 
     return flux, uncertainty
 
+def group_pix_to_pix(data_in, wcs_in, data_tmpl, wcs_tmpl):
+    '''
+    Group the pixels of data_in by the pixels of data_tmpl 
+    ------
+    Parameters:
+    data_in: np.2darray
+        High-resolution image data that needs to be grouped into low 
+        resolution pixels. 
+    wcs_in: 
+        Wcs for the input data. 
+    data_tmpl: np.2darray
+        Low-resolution template data to be matched to the input data.
+    wcs_tmpl
+        Wcs for the template data. 
+    ------
+    Return:
+    matched_idx: np.mask
+        Numpy mask array to determine if the smaller pixel in data_in belong
+        to the larger pixel in data_tmpl.
+    coords_label: np.1darray
+        Numpy array of labels coorresponding to the pixel number in data_tmpl
+        for each pixel in data_in. The pixel number is a 1d flattened array.
+        The returned coords_label can then be used to bin the input data. 
+    '''
+    map_in_shape=np.shape(data_in)
+    ny_in, nx_in=map_in_shape
+    xs_in, ys_in = np.meshgrid(np.arange(nx_in), np.arange(ny_in))
+    coords_in = pixel_to_skycoord(xs_in, ys_in, wcs_in)
+    
+    map_tmpl_shape = np.shape(data_tmpl)    
+    ny_tmpl, nx_tmpl = map_tmpl_shape
+    xs, ys = np.meshgrid(np.arange(nx_tmpl), np.arange(ny_tmpl))
+    coords_tmpl=pixel_to_skycoord(xs, ys, wcs_tmpl)
+    pixel_labels_tmpl = np.arange(xs.size)
+    deltax, deltay = np.abs(wcs_tmpl.wcs.cdelt) * 3600
+
+    pixel_map_arr = np.full((nx_in, ny_in), np.nan).flatten()
+
+    i_in=0
+    npix_in = coords_in.flatten().size
+    dra, ddec = np.zeros(npix_in), np.zeros(npix_in)
+    i_tmpl, d2d, d3d = match_coordinates_sky(coords_in.flatten(), coords_tmpl.flatten())
+    dra, ddec = (coords_in.flatten()).spherical_offsets_to(
+        coords_tmpl.flatten()[i_tmpl])
+    dra = dra.arcsec
+    ddec = ddec.arcsec
+
+    good = (-deltax/2-0.001 <= dra) & (dra < deltax/2+0.001) & (-deltay/2-0.001 <= ddec) & (ddec < deltay/2+0.001)
+    coords_labels = np.full(np.shape(coords_in),np.nan).flatten()
+
+    coords_labels[good] = pixel_labels_tmpl[i_tmpl[good]]
+    matched_idx = good
+
+    return matched_idx, coords_labels
+
 
 ###########################################################
 # change the data wcs information
