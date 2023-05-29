@@ -285,6 +285,40 @@ def group_pix_to_pix(data_in, wcs_in, data_tmpl, wcs_tmpl):
     return matched_idx, coords_labels
 
 
+def bin_data(data_in, coords_labels, data_tmpl, weights=None):
+    '''
+    Bin the input data to have the same shape as the template data
+    with larger pixel size. 
+    ------
+    Parameters:
+    data_in: np.2darray
+        High-resolution image data that needs to be binned. 
+    coords_labels: np.1darray
+        Results from function 'group_pix_to_pix()'. 
+    data_tmpl: np.2darray
+        Template 2d data to be matched with the same shape. 
+    weights: np.2darray
+        Weight for each pixel in the input data when doing 
+        binning average. 
+    ------
+    Return:
+    data_binned: np.2darray
+        Binned data
+    '''
+    data_binned = np.full(np.shape(data_tmpl.flatten()), np.nan)
+
+    for i in np.unique(coords_labels):
+        if np.isnan(i):
+            continue
+        idx = int(i)
+        condition = (coords_labels==i) &  (~np.isnan(data_in.flatten())
+        if len(np.where(condition)[0])>0:
+            data_binned[idx] = np.average(data_in.flatten()[condition], weights=weights.flatten()[condition])
+
+    data_binned = data_binned.reshape(np.shape(data_tmpl))
+
+    return data_binned
+
 ###########################################################
 # change the data wcs information
 
