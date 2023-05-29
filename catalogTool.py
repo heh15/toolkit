@@ -243,6 +243,18 @@ def group_catalog_to_pix(coords_in,wcs,data):
     coords_label: np.1darray
         Numpy array of labels coorresponding to the pixel number for each object in
         the catalog. 
+    ------
+    Examples
+    After labeling each item in the catalog, we can group items with the same pixel
+    label and calculate certain statistics for each group, such as
+    >>> matched_idx, coords_labels = labelForStacking(coords_in,wcs, data)
+    >>> catalog['pixel_label'] = coords_labels.astype(int)
+    >>> catalog_groups = catalog.groupby('pixel_label')
+    >>> pixel_catalog = catalog_groups.mean().reset_index() 
+
+    We can also match the image data to the pixel catalog
+    >>> idx = pixel_catalog['pixel_label'].astype(int)
+    >>> data_pix = data.flatten()[idx]
     '''
     deltax, deltay = np.abs(wcs.wcs.cdelt) * 3600
     ny, nx = np.shape(data)
