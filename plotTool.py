@@ -252,6 +252,38 @@ def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1), color='white'):
 
     return
 
+def add_colorbar(ax, orientation='horizontal', location='top', label=''):
+    '''
+    Add color bar to image with astropy coordinates. 
+    (Note: this function has only been tested for adding colorbar at the top so far.)
+    ------
+    Parameters:
+    ax: matplotlib.axes
+        The axes to add colorbar.
+    orientation: 'horizontal' or 'vertical'.
+        Colorbar orientation. 
+    location: 'top', 'bottom', 'left', 'right'
+        At which side of the image to add the color bar. 
+    label: strs
+        The color bar label
+    ------
+    Return:
+    cbar: matplotlib.colorbar
+    '''
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes(location, size='5%', pad=0.05)
+    cbar = plt.colorbar(im, cax=cax, orientation=orientation)
+    cax.coords[0].set_axislabel(label, fontsize=15)
+    cax.coords[0].set_axislabel_position('t')
+    cax.coords[0].set_ticklabel_position('t')
+    cax.coords[0].set_ticks_position('t')
+    cax.coords[1].set_axislabel(' ')
+    cax.coords[1].set_ticks_visible(False)
+    cax.coords[1].set_ticklabel_visible(False)
+    cax.coords.grid(draw_grid=False)
+
+    return cbar
+
 def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
     '''
     Truncate the colormap in matplotlib, modified from 
