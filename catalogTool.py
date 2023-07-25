@@ -286,7 +286,7 @@ def coord_in_mask(coord, mask):
     mask: np.mask
         Mask array
     '''
-    mask_coords = np.where(leaf_mask)
+    mask_coords = np.where(mask)
     mask_coords = np.transpose(np.vstack(mask_coords))
     if list(pos_list[idx[0]]) in mask_coords.tolist():
         return True
