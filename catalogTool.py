@@ -93,24 +93,28 @@ def Coords_str2deg(RA, Dec):
 
 def match_coords_cart(coords1, coords2):
     '''
-    Select the coordinates in df2 that is closest to every object in df1
+    Select the coordinates in coords2 that matches the closest coordinate
+    in coords1. 
     ------
     Paramters:
     coords1: np.ndarray
-        Numpy array of 3D cartisan coordinates with shape of (:, 3).
+        Numpy array of 2D coordinates with the shape of (:,2)
     coords2: np.ndarray
-        Numpy array of 3D cartisan coordinates with shape of (:, 3). 
+        Numpy array of 2D coordinates with the shape of (:,2)
     ------
     return
-    coords2_matched: np.ndarray
+    idx_coords2_matched: np.1darray
         Indexes of matched object in coords2
+    dist: np.1darray
+        Distances between two matched coordinates in each pair. 
     '''
     # get the difference between each vector from coords1 and coords2
     diff = coords1[:,np.newaxis, :] - coords2
     dist = np.sqrt(np.sum(np.square(diff), axis=2))
-    coords2_matched = np.nanargmin(dist, axis=1)
+    idx_coords2_matched = np.nanargmin(dist, axis=1)
+    dist_min = np.nanmin(dist, axis=1)
 
-    return coords2_matched
+    return idx_coords2_matched, dist_min
 
 def match_coords_skycart(coords1, coords2):
     '''
