@@ -269,6 +269,10 @@ def add_colorbar(ax, orientation='horizontal', location='top', label=''):
     ------
     Return:
     cbar: matplotlib.colorbar
+    ------
+    Usage case:
+    1. specify the tick label
+    >>> lon = cax.ax.coords[0]; lon.set_ticks(np.array([10, 100])*u.dimensionless_unscaled)
     '''
     divider = make_axes_locatable(ax)
     cax = divider.append_axes(location, size='5%', pad=0.05)
