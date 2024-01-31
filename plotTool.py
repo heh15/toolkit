@@ -212,23 +212,24 @@ def add_scalebar(ax, wcs, length, xy_axis=(0.1,0.8), color='w', linestyle='-', l
         Line and text object.
     '''
     axis_to_data = ax.transAxes + ax.transData.inverted()
-    left_side_pix = axis_to_data.transform(xy_axis)
-    left_side = wcs.pixel_to_world(left_side_pix[0],left_side_pix[1])
-    lines = ax.plot(u.Quantity([left_side.ra, left_side.ra-length]),
-                    u.Quantity([left_side.dec]*2),
+    middle_pix = axis_to_data.transform(xy_axis)
+    middle_sky = wcs.pixel_to_world(middle_pix[0],middle_pix[1])
+    lines = ax.plot(u.Quantity([middle_sky.ra+length/2, middle_sky.ra-length/2]),
+                    u.Quantity([middle_sky.dec]*2),
                     color=color, linestyle=linestyle, marker=None,
                     transform=ax.get_transform('fk5'),
                    )
-    txt = ax.text((left_side.ra-length/2).to(u.deg).value,
-                  (left_side.dec+text_offset).to(u.deg).value,
+    txt = ax.text((middle_sky.ra).to(u.deg).value,
+                  (middle_sky.dec+text_offset).to(u.deg).value,
                   label,
-                  verticalalignment='top',
+                  verticalalignment='bottom',
                   horizontalalignment='center',
                   transform=ax.get_transform('fk5'),
                   color=color,
                   fontsize=fontsize,
                  )
     return lines,txt
+
 
 def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1), color='white', add_box=True):
     '''
