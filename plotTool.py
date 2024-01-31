@@ -230,7 +230,7 @@ def add_scalebar(ax, wcs, length, xy_axis=(0.1,0.8), color='w', linestyle='-', l
                  )
     return lines,txt
 
-def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1), color='white'):
+def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1), color='white', add_box=True):
     '''
     Add the beam to the image
     -----
@@ -249,6 +249,16 @@ def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1), color='white'):
     ellipse_artist = beam.ellipse_to_plot(xcen_pix, ycen_pix, pixscale)
     ellipse_artist.set_color(color)
     _ = ax.add_artist(ellipse_artist)
+
+    # draw a box around the beam with the fixed size of 5 arcsec
+    if add_box == True:
+        side_len = (5*u.arcsec / (np.sqrt(np.sum(wcs.wcs.cdelt**2))*u.deg)).si.value
+        beam_rectangle = Rectangle((xcen_pix - side_len/2, ycen_pix - side_len/2),
+                  side_len, side_len,
+                  edgecolor="black",
+                  facecolor='None',
+                  zorder=1)
+        ax.add_artist(beam_rectangle)
 
     return
 
