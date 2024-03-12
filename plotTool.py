@@ -249,6 +249,7 @@ def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1), color='white', add_box=True):
     pixscale = np.sqrt(np.sum(wcs.wcs.cdelt**2))*u.deg
     ellipse_artist = beam.ellipse_to_plot(xcen_pix, ycen_pix, pixscale)
     ellipse_artist.set_color(color)
+    ellipse_artist.set_zorder(2)
     _ = ax.add_artist(ellipse_artist)
 
     # draw a box around the beam with the fixed size of 5 arcsec
