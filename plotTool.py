@@ -241,7 +241,9 @@ def add_beam(ax, wcs, beam, xy_axis=(0.1,0.1), color='white', add_box=True):
     wcs: astropy.wcs
         World Coordinate System for the image
     beam: radio-beam.Beam
-        Beam object
+        Beam object. This can be acquired by reading the fits file. e.g.
+        >>> header = fits.getheader(imageDir+'antennae_12m+7m+tp_co10_150pc_combo_ew_nyquist.fits')
+        >>> beam = Beam.from_fits_header(header) 
     xy_axis: coordinate relative to xy axis
     '''
     axis_to_data = ax.transAxes + ax.transData.inverted()
