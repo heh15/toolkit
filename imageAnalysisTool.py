@@ -312,7 +312,7 @@ def bin_data(data_in, coords_labels, data_tmpl, weights=None):
         if np.isnan(i):
             continue
         idx = int(i)
-        condition = (coords_labels==i) &  (~np.isnan(data_in.flatten())
+        condition = (coords_labels==i) &  (~np.isnan(data_in.flatten()))
         if len(np.where(condition)[0])>0:
             data_binned[idx] = np.average(data_in.flatten()[condition], weights=weights.flatten()[condition])
 
