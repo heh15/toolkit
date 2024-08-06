@@ -32,6 +32,7 @@ import math
 import shutil
 import pandas as pd
 from astropy.coordinates import match_coordinates_sky
+from reproject import reproject_interp, reproject_exact
 
 ###########################################################
 # I/O of data
@@ -410,7 +411,10 @@ def reproject_north(data,wcs):
     wcs_north = WCS(naxis=2)
     wcs_north.wcs.crval = wcs.wcs.crval
     wcs_north.wcs.crpix = wcs.wcs.crpix
-    cd = wcs.wcs.cd
+    try:
+        cd = wcs.wcs.cd
+    except:
+        cd = wcs.wcs.pc * wcs.wcs.cdelt
     wcs_north.wcs.cd = np.sqrt(cd[0,0]**2+cd[1,0]**2)*np.array([[-1,0],[0,1]])
     wcs_north.wcs.ctype = ['RA---SIN', 'DEC--SIN']
     data_north, footprint = reproject_exact((data, wcs), wcs_north, 
