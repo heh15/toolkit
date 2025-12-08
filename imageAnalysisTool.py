@@ -52,7 +52,7 @@ def fits_import(fitsimage, item=0):
     data=fits.open(fitsimage)[item].data
     data=np.squeeze(data)
 
-    return wcs, data
+    return data, wcs
 
 def output_fits(fitsimage, data, wcs):
     '''
@@ -102,7 +102,7 @@ def cut_2d(data, position, size, wcs):
     data_cut=cut.data
     wcs_cut=cut.wcs
 
-    return wcs_cut, data_cut
+    return data_cut, wcs_cut
 
 
 def aperture_rings(a_in,a_out,wcs,cosi,pa):
