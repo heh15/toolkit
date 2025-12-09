@@ -422,6 +422,66 @@ def reproject_north(data,wcs):
     
     return wcs_north, data_north
 
+def resample_nyq(
+        infile, ihdu=None, writefile='', new_crval=None, **kwargs):
+    """
+    Nyquist sample a fits file and output a new fits file.
+    Adapted from Jiayi's function. 
+    ------
+    Parameters:
+    infile, writefile: str
+        Input and output filenames    
+    """
+    hdul = fits.open(infile)
+    if ihdu is None:
+        ihdu = range(len(hdul))
+    newhdul = []
+    for hdu in hdul:
+        bmaj = Beam.from_fits_header(hdu.header).major.to('deg').value
+        newhdr = regrid_header(
+            hdu.header, new_cdelt=bmaj/2, new_crval=new_crval,
+            keep_non_celestial_axes=True)
+        newhdul += [regrid_image_hdu(hdu, newhdr, **kwargs)]
+    newhdul = fits.HDUList(newhdul)
+    hdul.close()
+
+    if writefile:
+        newhdul.writeto(writefile, overwrite=True)
+        return writefile
+    else:
+        return newhdul
+
+def reproject_fits(in_file, target_header, outfile, method='interp'):
+    """
+    Reproject the input fits map data and output the reprojected data into a new fits file
+    ------
+    Parameters:
+    in_file: str
+        Name of the input file
+    target_header: hdu.header
+        The template header to be reprojected to
+    outfile: str
+        Name of the output file
+    """
+    if method == 'interp':
+        data_reproj, footprint = reproject_interp(in_file, target_header)
+    with fits.open(in_file) as hdul:
+        in_header = hdul[0].header
+    new_header = in_header.copy()
+    target_wcs = WCS(target_header)
+    new_header.update(target_wcs.to_header())
+    
+    # Make sure NAXIS, NAXIS1, NAXIS2 match the new data shape
+    ny, nx = data_reproj.shape
+    new_header["NAXIS"]  = 2
+    new_header["NAXIS1"] = nx
+    new_header["NAXIS2"] = ny
+    
+    hdu_out = fits.PrimaryHDU(data_reproj, header=new_header)
+    hdu_out.writeto(outfile, overwrite=True)
+
+    return outfile
+
 ###########################################################
 # Processing 3d data
 
