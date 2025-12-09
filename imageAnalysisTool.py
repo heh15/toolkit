@@ -426,7 +426,9 @@ def resample_nyq(
         infile, ihdu=None, writefile='', new_crval=None, **kwargs):
     """
     Nyquist sample a fits file and output a new fits file.
-    Adapted from Jiayi's function. 
+    Adapted from Jiayi's function.
+    Needs to run:
+    >> from sun_astro_tools.fits import regrid_header, regrid_image_hdu 
     ------
     Parameters:
     infile, writefile: str
