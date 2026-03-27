@@ -144,15 +144,14 @@ def Regmask_convert(region_pix,data):
     data: np.2darray
     ------
     Returns: 
-    data_region: numpy masked array, values in region are masked. 
+    region_mask: return masks that select the inside of the region
     '''
-    apmask = region_pix.to_mask()
+    reg_mask = region_pix.to_mask()
     shape = data.shape
-    mask=apmask.to_image(shape=((shape[0],shape[1])))
-    ap_mask=mask==0
-    data_region = np.ma.masked_where(ap_mask,data)
+    mask=reg_mask.to_image(shape=((shape[0],shape[1])))
+    region_mask=mask==1
 
-    return data_region
+    return region_mask
 
 def casaMask_convert(data,region_masked):
     '''
