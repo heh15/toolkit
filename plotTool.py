@@ -186,10 +186,10 @@ def add_label_band(ax, left, right, label, *, spine_pos=-0.12, tip_pos=-0.09, fo
 
     return bracket, txt
 
-def add_scalebar(ax, wcs, length, xy_axis=(0.1,0.8), color='w', linestyle='-', label='',
-                 fontsize=12, text_offset=0.1*u.arcsec):
+def add_scalebar_manual(ax, wcs, length, xy_axis=(0.1,0.8), color='w', linestyle='-', label='', fontsize=12, text_offset=0.1, va='top', ha='center'):
     '''
     Add scale bar to the image, code modified from https://github.com/astropy/astropy-tutorials/issues/443.
+    Apr.5th, 2026: Change the function name to avoid the conflict with the `add_scalebar` function in `astropy.visualization.wcsaxes`.
     ------
     Parameters:
     ax: matplotlib.axes
@@ -205,7 +205,9 @@ def add_scalebar(ax, wcs, length, xy_axis=(0.1,0.8), color='w', linestyle='-', l
     linestyle, label, fontsize:
         Parameters for plt.plot
     text_offset: astropy.Quantity
-        Text vertical offset from the bar
+        Text vertical offset from the bar in the unit of axis fraction
+    va, ha: str
+        Alignment option of the text relative to the line. 
     ------
     Returns:
     lines,txt:
@@ -219,11 +221,14 @@ def add_scalebar(ax, wcs, length, xy_axis=(0.1,0.8), color='w', linestyle='-', l
                     color=color, linestyle=linestyle, marker=None,
                     transform=ax.get_transform('fk5'),
                    )
-    txt = ax.text((middle_sky.ra).to(u.deg).value,
-                  (middle_sky.dec+text_offset).to(u.deg).value,
+    xy_axis_txt = (xy_axis[0], xy_axis[1]+text_offset)
+    middle_pix_txt = axis_to_data.transform(xy_axis_txt)
+    middle_sky_txt =  wcs.pixel_to_world(middle_pix_txt[0],middle_pix_txt[1])
+    txt = ax.text((middle_sky_txt.ra).to(u.deg).value,
+                  (middle_sky_txt.dec).to(u.deg).value,
                   label,
-                  verticalalignment='bottom',
-                  horizontalalignment='center',
+                  verticalalignment=va,
+                  horizontalalignment=ha,
                   transform=ax.get_transform('fk5'),
                   color=color,
                   fontsize=fontsize,
