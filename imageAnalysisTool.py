@@ -483,6 +483,77 @@ def reproject_fits(in_file, target_header, outfile, method='interp'):
 
     return outfile
 
+def rotate_fits_with_wcs(
+    input_fits,
+    output_fits,
+    angle_deg,
+    reshape=False,
+    interpolation_order=3,
+    item=0
+):
+    """
+    Rotate a FITS image and its WCS header by a given angle.
+
+    Parameters
+    ----------
+    input_fits : str
+        Path to the input FITS file.
+    output_fits : str
+        Path to save the rotated FITS file.
+    angle_deg : float
+        Rotation angle in degrees (counterclockwise).
+    reshape : bool, optional
+        If True, expands the output image to hold the entire rotated image.
+        If False, keeps the original image size. Default is False.
+    interpolation_order : int, optional
+        Interpolation order (0=nearest, 1=linear, 3=cubic). Default is 3. If 
+        blank pixels across entire map, change it to 1. 
+    item: int, optional
+        Input fits hdu number. 
+    
+    Output:
+    ----------
+    Write the rotated data and wcs into a new fits file
+    """
+    # --- Load the FITS data and WCS ---
+    with fits.open(input_fits) as hdul:
+        hdu = hdul[item]
+        data = hdu.data
+        data = np.squeeze(data)
+        wcs = WCS(hdu.header).celestial
+
+    # --- Rotate the data array ---
+    rotated_data = rotate(
+        data,
+        angle_deg,
+        reshape=reshape,
+        order=interpolation_order
+    )
+
+    # --- Update the WCS rotation matrix ---
+    if wcs.wcs.has_cd():
+        cd = wcs.wcs.cd
+    else:
+        cd = wcs.wcs.pc
+
+    theta = np.deg2rad(angle_deg)
+    rotation_matrix = np.array([
+        [np.cos(theta), -np.sin(theta)],
+        [np.sin(theta),  np.cos(theta)]
+    ])
+    new_cd = cd @ rotation_matrix
+
+    if wcs.wcs.has_cd():
+        wcs.wcs.cd = new_cd
+    else:
+        wcs.wcs.pc = new_cd
+
+    # --- Write new FITS file ---
+    hdu_rot = fits.PrimaryHDU(rotated_data, header=wcs.to_header())
+    hdu_rot.writeto(output_fits, overwrite=True)
+
+    print(f"✅ Rotated FITS saved to: {output_fits}")
+
 ###########################################################
 # Processing 3d data
 
