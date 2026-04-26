@@ -346,3 +346,18 @@ def combine_colormap(colors1, colors2)
     mymap = colors.LinearSegmentedColormap.from_list('my_colormap', colors_combined)
 
     return mymap
+
+def remove_ax_label(ax):
+    """
+    Remove the axis label that shows image with wcs coordinates, generally used 
+    for proposals and presentations. 
+    
+    Parameters
+    ------------
+    ax: matplotlib.axes
+        Ax with wcs projection. 
+    """
+    lon = ax.coords[0];lat = ax.coords[1]
+    lon.set_axislabel(' '); lat.set_axislabel(' ')
+    lon.set_ticks_visible(False); lat.set_ticks_visible(False)
+    lon.set_ticklabel_visible(False); lat.set_ticklabel_visible(False)
