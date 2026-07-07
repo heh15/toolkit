@@ -27,6 +27,34 @@ def round_sig(x, sig=2):
     '''
     return round(x, sig-int(floor(log10(abs(x))))-1)
 
+# round the value to the first digit of the uncertainty
+def round_to_error(value, error):
+    """
+    Round value and error to the first significant digit of the error.
+
+    Example:
+        value = 12.3456, error = 0.0789
+        -> 12.3, 0.08
+    """
+    if error == 0 or not np.isfinite(error):
+        return value, error
+
+    error_abs = abs(error)
+    
+    # decimal position of first significant digit of error
+    exponent = np.floor(np.log10(abs(error)))
+    decimals_err = int(-exponent)
+    error_rounded = np.round(error, decimals_err)
+    
+    # Now determine decimal places from the rounded error
+    exponent_rounded = np.floor(np.log10(abs(error_rounded)))
+    decimals_value = int(max(0, -exponent_rounded))
+
+    value_rounded = np.round(value, decimals_value)
+    error_rounded = np.round(error_rounded, decimals_value)
+    
+    return value_rounded, error_rounded
+
 # fit the Gaussian function
 def gaus(x,a,x0,sigma):
     '''
